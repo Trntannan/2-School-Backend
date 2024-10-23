@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const User = require("../models/user");
-const { MongoClient, ObjectId } = require("mongodb");
+const { MongoClient, ObjectId, Binary } = require("mongodb");
 
 require("dotenv").config();
 
@@ -110,7 +110,7 @@ const completeUserProfile = async (req, res) => {
 
     if (req.file) {
       update.profile.profilePic = {
-        data: req.file.buffer,
+        data: new Binary(req.file.buffer),
         contentType: req.file.mimetype,
       };
     }
@@ -144,10 +144,10 @@ const getUserProfile = async (req, res) => {
 };
 
 const updateUserProfile = async (req, res) => {
-  const { fullName, school, kidCount, bio } = req.body;
+  const { fullName, school, kidCount, bio, profilePic } = req.body;
 
   try {
-    const update = { profile: { fullName, school, kidCount, bio } };
+    const update = { profile: { fullName, school, kidCount, bio, profilePic } };
     const user = await usersCollection.findOneAndUpdate(
       { _id: new ObjectId(req.userId) },
       { $set: update }
@@ -213,7 +213,12 @@ router.post(
   completeUserProfile
 );
 router.get("/get-profile", authenticateToken, getUserProfile);
-router.put("/update-profile", authenticateToken, updateUserProfile);
+router.put(
+  "/update-profile",
+  authenticateToken,
+  upload.single("profilePic"),
+  updateUserProfile
+);
 router.get("/get-groups", authenticateToken, getGroups);
 router.post("/new-group", authenticateToken, newGroup);
 
