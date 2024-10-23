@@ -1,16 +1,5 @@
 {
   "users": [
-    {
-      "userId": "8c7bfac81c0dcc4ebdbb14b616d48536",
-      "username": "bob",
-      "email": "trntannan1@gmail.com",
-      "password": "a",
-      "profile": {
-        "fullName": "",
-        "kidCount": 0,
-        "school": "",
-        "bio": ""
-      }
-    }
+    
   ]
 }
