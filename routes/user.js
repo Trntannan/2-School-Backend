@@ -114,10 +114,9 @@ const completeUserProfile = async (req, res) => {
         contentType: req.file.mimetype,
       };
     }
-    await usersCollection.updateOne(
-      { _id: new ObjectId(req.userId) },
-      { $set: update }
-    );
+    await usersCollection.updateOne({ _id: new ObjectId(req.userId) }, [
+      { $set: update },
+    ]);
 
     res.json({ message: "Profile updated successfully" });
   } catch (error) {
