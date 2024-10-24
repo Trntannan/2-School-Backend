@@ -51,9 +51,6 @@ const connectToMongoDB = async () => {
 };
 
 const generateToken = (userId) => {
-  if (!userId) {
-    throw new Error("User ID is required for token generation");
-  }
   return jwt.sign({ id: userId.toString() }, JWT_SECRET, { expiresIn: "1h" });
 };
 
