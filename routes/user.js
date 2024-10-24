@@ -126,6 +126,7 @@ const completeUserProfile = async (req, res) => {
 };
 
 const getUserProfile = async (req, res) => {
+  console.log("url:", req.url);
   try {
     const user = await usersCollection.findOne({
       _id: new ObjectId(req.userId),
