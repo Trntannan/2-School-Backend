@@ -124,7 +124,7 @@ const completeUserProfile = async (req, res) => {
         contentType: req.file.mimetype,
       };
     }
-    await usersCollection.updateOne({ _id: new ObjectId(req.userId) }, [
+    await usersCollection.updateOne({ _id: ObjectId(req.userId) }, [
       { $set: update },
     ]);
 
@@ -139,7 +139,7 @@ const getUserProfile = async (req, res) => {
   console.log("url:", req.url);
   try {
     const user = await usersCollection.findOne({
-      _id: new ObjectId(req.userId),
+      _id: ObjectId(req.userId),
     });
 
     if (!user) {
@@ -159,7 +159,7 @@ const updateUserProfile = async (req, res) => {
   try {
     const update = { profile: { fullName, school, kidCount, bio, profilePic } };
     const user = await usersCollection.findOneAndUpdate(
-      { _id: new ObjectId(req.userId) },
+      { _id: ObjectId(req.userId) },
       { $set: update }
     );
 
@@ -180,7 +180,7 @@ const updateUserProfile = async (req, res) => {
 const getGroups = async (req, res) => {
   try {
     const userId = req.user.id;
-    const groups = await usersCollection.findOne({ _id: new ObjectId(userId) });
+    const groups = await usersCollection.findOne({ _id: ObjectId(userId) });
 
     res.status(200).json({ success: true, groups: groups.groups });
   } catch (error) {
