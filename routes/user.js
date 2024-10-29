@@ -216,8 +216,8 @@ const getGroup = async (req, res) => {
 };
 
 function parseCoordinates(coordinates) {
-  const [lat, long] = coordinates.split(",").map(number);
-  return { lat, long };
+  const [latitude, longitude] = coordinates.split(",");
+  return { latitude: parseFloat(latitude), longitude: parseFloat(longitude) };
 }
 
 const deleteAccount = async (req, res) => {
