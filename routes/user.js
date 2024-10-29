@@ -74,7 +74,6 @@ const upload = multer();
 
 const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
-
   try {
     const existingUser = await usersCollection.findOne({ email });
     if (existingUser) {
@@ -83,11 +82,9 @@ const registerUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = { username, email, password: hashedPassword };
-
     const result = await usersCollection.insertOne(newUser);
 
     const token = generateToken(result.insertedId);
-
     res.status(201).json({ message: "User registered successfully", token });
   } catch (err) {
     console.error("Error registering user:", err);
@@ -97,7 +94,6 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   const { username, password } = req.body;
-
   try {
     const user = await usersCollection.findOne({ username });
     if (!user || !(await bcrypt.compare(password, user.password))) {
