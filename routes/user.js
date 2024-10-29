@@ -178,7 +178,7 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-const getGroups = async (req, res) => {
+const getGroup = async (req, res) => {
   try {
     const groups = await groupsCollection
       .find({ creator: req.userId })
@@ -237,7 +237,7 @@ router.put(
   upload.single("profilePic"),
   updateUserProfile
 );
-router.get("/get-groups", authenticateToken, getGroups);
+router.get("/get-group", authenticateToken, getGroup);
 router.post("/new-group", authenticateToken, newGroup);
 
 module.exports = { router, connectToMongoDB };
