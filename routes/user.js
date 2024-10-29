@@ -113,10 +113,9 @@ const loginUser = async (req, res) => {
 };
 
 const completeUserProfile = async (req, res) => {
-  const { fullName, school, kidCount, bio } = req.body;
-
+  const { school, kidCount, bio } = req.body;
   try {
-    const update = { profile: { fullName, school, kidCount, bio } };
+    const update = { profile: { school, kidCount, bio } };
 
     if (req.file) {
       update.profile.profilePic = {
