@@ -211,7 +211,7 @@ const newGroup = async (req, res) => {
 const getGroup = async (req, res) => {
   try {
     const groups = await groupsCollection.findOne({
-      _id: new ObjectId(req.userId),
+      creator: new ObjectId(req.userId),
     });
     res.json({ groups });
   } catch (error) {
