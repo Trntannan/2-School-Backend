@@ -178,27 +178,16 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-const getGroup = async (req, res) => {
-  try {
-    const groups = await groupsCollection
-      .find({ creator: req.userId })
-      .toArray();
-    res.json({ groups });
-  } catch (error) {
-    console.error("Error fetching groups:", error);
-    res.status(500).json({ message: "Error fetching groups" });
-  }
-};
-
 const newGroup = async (req, res) => {
-  const { user, groupData } = req.body;
+  const userId = req.userId;
+  const { groupData } = req.body;
   const { groupName, schoolName, schoolLocation, meetupPoint, startTime } =
     groupData;
   const parsedSchoolLocation = parseCoordinates(schoolLocation);
   const parsedMeetupPoint = parseCoordinates(meetupPoint);
 
   const newGroup = {
-    creator: req.userId,
+    userId,
     groupName,
     schoolName,
     schoolLocation: parsedSchoolLocation,
@@ -207,13 +196,22 @@ const newGroup = async (req, res) => {
   };
 
   try {
-    const result = await groupsCollection.insertOne(newGroup);
-    res
-      .status(201)
-      .json({ message: "Group created successfully", group: newGroup });
+    await groupsCollection.insertOne(newGroup);
+
+    res.json({ message: "Group created successfully", group: newGroup });
   } catch (error) {
     console.error("Error creating group:", error);
     res.status(500).json({ message: "Error creating group" });
+  }
+};
+
+const getGroup = async (req, res) => {
+  try {
+    const groups = await groupsCollection.find({}).toArray();
+    res.json({ groups });
+  } catch (error) {
+    console.error("Error fetching groups:", error);
+    res.status(500).json({ message: "Error fetching groups" });
   }
 };
 
@@ -221,6 +219,16 @@ function parseCoordinates(coordinates) {
   const [lat, long] = coordinates.split(",").map(number);
   return { lat, long };
 }
+
+const deleteAccount = async (req, res) => {
+  try {
+    await usersCollection.deleteOne({ _id: new ObjectId(req.userId) });
+    res.status(200).json({ message: "Account deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    res.status(500).json({ message: "Error deleting account" });
+  }
+};
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
@@ -239,5 +247,6 @@ router.put(
 );
 router.get("/get-group", authenticateToken, getGroup);
 router.post("/new-group", authenticateToken, newGroup);
+router.delete("/delete-account", authenticateToken, deleteAccount);
 
 module.exports = { router, connectToMongoDB };
