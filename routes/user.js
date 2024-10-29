@@ -138,7 +138,7 @@ const getUserProfile = async (req, res) => {
   console.log("url:", req.url);
   try {
     const user = await usersCollection.findOne({
-      _id: ObjectId(req.userId),
+      _id: new ObjectId(req.userId),
     });
 
     if (!user) {
@@ -158,7 +158,7 @@ const updateUserProfile = async (req, res) => {
   try {
     const update = { profile: { fullName, school, kidCount, bio, profilePic } };
     const user = await usersCollection.findOneAndUpdate(
-      { _id: ObjectId(req.userId) },
+      { _id: new ObjectId(req.userId) },
       { $set: update }
     );
 
