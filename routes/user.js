@@ -207,7 +207,7 @@ const newGroup = async (req, res) => {
 
 const getGroup = async (req, res) => {
   try {
-    const groups = await groupsCollection.find({}).toArray();
+    const groups = await groupsCollection.find({});
     res.json({ groups });
   } catch (error) {
     console.error("Error fetching groups:", error);
