@@ -133,16 +133,15 @@ const completeUserProfile = async (req, res) => {
 const getUserProfile = async (req, res) => {
   console.log("url:", req.url);
   try {
-    const user = await usersCollection.findOne(
-      { _id: new ObjectId(req.userId) },
-      { projection: { username: 1, profile: 1 } }
-    );
+    const user = await usersCollection.findOne({
+      _id: new ObjectId(req.userId),
+    });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({ username: user.username, profile: user.profile });
+    res.json({ profile: user.profile });
   } catch (error) {
     console.error("Error fetching profile:", error);
     res.status(500).json({ message: "Error fetching profile" });
@@ -150,23 +149,13 @@ const getUserProfile = async (req, res) => {
 };
 
 const updateUserProfile = async (req, res) => {
-  const { school, kidCount, bio, profilePic, username } = req.body;
+  const { school, kidCount, bio, profilePic } = req.body;
 
   try {
-    const update = {};
-    if (username) update.username = username;
-    if (school || kidCount || bio || profilePic) {
-      update.profile = {};
-      if (school) update.profile.school = school;
-      if (kidCount) update.profile.kidCount = kidCount;
-      if (bio) update.profile.bio = bio;
-      if (profilePic) update.profile.profilePic = profilePic;
-    }
-
+    const update = { profile: { school, kidCount, bio, profilePic } };
     const user = await usersCollection.findOneAndUpdate(
       { _id: new ObjectId(req.userId) },
-      { $set: update },
-      { returnDocument: "after" }
+      { $set: update }
     );
 
     if (!user.value) {
@@ -176,7 +165,6 @@ const updateUserProfile = async (req, res) => {
     res.json({
       message: "Profile updated successfully",
       profile: user.value.profile,
-      username: user.value.username,
     });
   } catch (error) {
     console.error("Error updating profile:", error);
