@@ -187,7 +187,7 @@ const newGroup = async (req, res) => {
   const parsedMeetupPoint = parseCoordinates(meetupPoint);
 
   const newGroup = {
-    userId,
+    creator: new ObjectId(userId),
     groupName,
     schoolName,
     schoolLocation: parsedSchoolLocation,
@@ -196,9 +196,12 @@ const newGroup = async (req, res) => {
   };
 
   try {
-    await groupsCollection.insertOne(newGroup);
+    const result = await groupsCollection.insertOne(newGroup);
 
-    res.json({ message: "Group created successfully", group: newGroup });
+    res.json({
+      message: "Group created successfully",
+      groupId: result.insertedId,
+    });
   } catch (error) {
     console.error("Error creating group:", error);
     res.status(500).json({ message: "Error creating group" });
@@ -207,7 +210,9 @@ const newGroup = async (req, res) => {
 
 const getGroup = async (req, res) => {
   try {
-    const groups = await groupsCollection.find({});
+    const groups = await groupsCollection.findOne({
+      _id: new ObjectId(req.userId),
+    });
     res.json({ groups });
   } catch (error) {
     console.error("Error fetching groups:", error);
