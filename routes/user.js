@@ -42,6 +42,9 @@ const connectToMongoDB = async () => {
     );
     if (!databaseExists) {
       await db.createCollection("users");
+      console.log("Created 'users' collection in the database");
+      await db.createCollection("groups");
+      console.log("Created 'groups' collection in the database");
     }
     usersCollection = db.collection("users");
     groupsCollection = db.collection("groups");
@@ -189,7 +192,7 @@ const getGroups = async (req, res) => {
 
 const newGroup = async (req, res) => {
   const { user, groupData } = req.body;
-  const { roupName, schoolName, schoolLocation, meetupPoint, startTime } =
+  const { groupName, schoolName, schoolLocation, meetupPoint, startTime } =
     groupData;
   const parsedSchoolLocation = parseCoordinates(schoolLocation);
   const parsedMeetupPoint = parseCoordinates(meetupPoint);
