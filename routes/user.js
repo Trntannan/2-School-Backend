@@ -150,13 +150,23 @@ const getUserProfile = async (req, res) => {
 };
 
 const updateUserProfile = async (req, res) => {
-  const { school, kidCount, bio, profilePic } = req.body;
+  const { school, kidCount, bio, profilePic, username } = req.body;
 
   try {
-    const update = { profile: { school, kidCount, bio, profilePic } };
+    const update = {};
+    if (username) update.username = username;
+    if (school || kidCount || bio || profilePic) {
+      update.profile = {};
+      if (school) update.profile.school = school;
+      if (kidCount) update.profile.kidCount = kidCount;
+      if (bio) update.profile.bio = bio;
+      if (profilePic) update.profile.profilePic = profilePic;
+    }
+
     const user = await usersCollection.findOneAndUpdate(
       { _id: new ObjectId(req.userId) },
-      { $set: update }
+      { $set: update },
+      { returnDocument: "after" }
     );
 
     if (!user.value) {
@@ -166,6 +176,7 @@ const updateUserProfile = async (req, res) => {
     res.json({
       message: "Profile updated successfully",
       profile: user.value.profile,
+      username: user.value.username,
     });
   } catch (error) {
     console.error("Error updating profile:", error);
