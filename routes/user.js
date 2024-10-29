@@ -13,6 +13,7 @@ const mongoURI = process.env.MONGODB_URI;
 const DATABASE_NAME = process.env.DATABASE_NAME;
 
 let usersCollection;
+let groupsCollection;
 
 const app = express();
 
@@ -43,6 +44,8 @@ const connectToMongoDB = async () => {
       await db.createCollection("users");
     }
     usersCollection = db.collection("users");
+    groupsCollection = db.collection("groups");
+
     return db;
   } catch (error) {
     console.error("Failed to connect to MongoDB:", error);
@@ -174,10 +177,10 @@ const updateUserProfile = async (req, res) => {
 
 const getGroups = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const groups = await usersCollection.findOne({ _id: ObjectId(userId) });
-
-    res.status(200).json({ success: true, groups: groups.groups });
+    const groups = await groupsCollection
+      .find({ creator: req.userId })
+      .toArray();
+    res.json({ groups });
   } catch (error) {
     console.error("Error fetching groups:", error);
     res.status(500).json({ message: "Error fetching groups" });
@@ -185,19 +188,26 @@ const getGroups = async (req, res) => {
 };
 
 const newGroup = async (req, res) => {
+  const { user, groupData } = req.body;
+  const { roupName, schoolName, schoolLocation, meetupPoint, startTime } =
+    groupData;
+  const parsedSchoolLocation = parseCoordinates(schoolLocation);
+  const parsedMeetupPoint = parseCoordinates(meetupPoint);
+
+  const newGroup = {
+    creator: req.userId,
+    groupName,
+    schoolName,
+    schoolLocation: parsedSchoolLocation,
+    meetupPoint: parsedMeetupPoint,
+    startTime,
+  };
+
   try {
-    const { groupData, userId } = req.body;
-
-    const newGroup = new Group({
-      ...groupData,
-      meetupPoint: parseCoordinates(groupData.meetupPoint),
-      schoolLocation: parseCoordinates(groupData.schoolLocation),
-      userId,
-    });
-
-    await newGroup.save();
-
-    res.status(201).json({ success: true, group: newGroup });
+    const result = await groupsCollection.insertOne(newGroup);
+    res
+      .status(201)
+      .json({ message: "Group created successfully", group: newGroup });
   } catch (error) {
     console.error("Error creating group:", error);
     res.status(500).json({ message: "Error creating group" });
@@ -205,7 +215,7 @@ const newGroup = async (req, res) => {
 };
 
 function parseCoordinates(coordinates) {
-  const [lat, long] = coords.split(",").map(number);
+  const [lat, long] = coordinates.split(",").map(number);
   return { lat, long };
 }
 
