@@ -2,64 +2,69 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
+const sharp = require("sharp");
+const mongoose = require("mongoose");
 const User = require("../models/user");
-const { MongoClient, ObjectId, Binary } = require("mongodb");
-
 require("dotenv").config();
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET;
+const jwtSecret = process.env.JWT_SECRET;
 const mongoURI = process.env.MONGODB_URI;
-const DATABASE_NAME = process.env.DATABASE_NAME;
-
-let usersCollection;
-let groupsCollection;
+const dbName = process.env.DATABASE_NAME;
 
 const app = express();
 
-app.use;
-(req, res, next) => {
+app.use(express.json());
+
+// Middleware for CORS
+app.use((res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
   res.header(
     "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
   );
   next();
-};
+});
 
+// MongoDB Connection
 const connectToMongoDB = async () => {
-  const client = new MongoClient(mongoURI);
-
   try {
-    await client.connect();
-    console.log("Connected to MongoDB server");
-    db = client.db(DATABASE_NAME);
-
-    const dbList = await client.db().admin().listDatabases();
-    const databaseExists = dbList.databases.some(
-      (db) => db.name === DATABASE_NAME
-    );
-    if (!databaseExists) {
-      await db.createCollection("users");
-      console.log("Created 'users' collection in the database");
-      await db.createCollection("groups");
-      console.log("Created 'groups' collection in the database");
-    }
-    usersCollection = db.collection("users");
-    groupsCollection = db.collection("groups");
-
-    return db;
+    await mongoose.connect(mongoURI, {
+      dbName,
+    });
+    console.log(`Connected to MongoDB database: ${dbName}`);
+    await initializeCollections();
   } catch (error) {
-    console.error("Failed to connect to MongoDB:", error);
-    throw error;
+    console.error("MongoDB connection error:", error);
+    process.exit(1);
   }
 };
 
-const generateToken = (userId) => {
-  return jwt.sign({ id: userId.toString() }, JWT_SECRET, { expiresIn: "1h" });
+// Initialize User Collection
+const initializeCollections = async () => {
+  try {
+    const userExists = await User.findOne();
+    if (!userExists) {
+      await new User({
+        username: "init-user",
+        email: "init@example.com",
+        password: "a",
+      }).save();
+      console.log("'users' collection initialized");
+    }
+  } catch (error) {
+    console.error("Error initializing collections:", error);
+    process.exit(1);
+  }
 };
 
+// Token Generation
+const generateToken = (userId) => {
+  return jwt.sign({ id: userId.toString() }, jwtSecret, { expiresIn: "1h" });
+};
+
+// Token Authentication Middleware
 const authenticateToken = (req, res, next) => {
   const token = req.header("Authorization")?.split(" ")[1];
 
@@ -68,7 +73,7 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, jwtSecret);
     req.userId = decoded.id;
     next();
   } catch (err) {
@@ -76,21 +81,34 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-const upload = multer();
+// Multer Storage and Upload Setup
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only images are allowed"), false);
+    }
+  },
+});
 
+// User Registration
 const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
   try {
-    const existingUser = await usersCollection.findOne({ email });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = { username, email, password: hashedPassword };
-    const result = await usersCollection.insertOne(newUser);
+    const newUser = new User({ username, email, password: hashedPassword });
+    await newUser.save();
 
-    const token = generateToken(result.insertedId);
+    const token = generateToken(newUser._id);
     res.status(201).json({ message: "User registered successfully", token });
   } catch (err) {
     console.error("Error registering user:", err);
@@ -98,12 +116,26 @@ const registerUser = async (req, res) => {
   }
 };
 
+// User Login
 const loginUser = async (req, res) => {
   const { username, password } = req.body;
   try {
-    const user = await usersCollection.findOne({ username });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    const user = await User.findOne({ username });
+    console.log("user from DB:", user);
+
+    if (username === "" || password === "") {
+      return res.status(400).json({ message: "Please fill in all fields" });
+    }
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    console.log("passwordMatch:", passwordMatch);
+    if (!passwordMatch) {
+      return res.status(401).json({
+        message: "Invalid password",
+      });
     }
 
     const token = generateToken(user._id);
@@ -114,40 +146,54 @@ const loginUser = async (req, res) => {
   }
 };
 
+// Complete User Profile with Profile Picture Handling
 const completeUserProfile = async (req, res) => {
   const { school, kidCount, bio } = req.body;
+  let profilePic = null;
+
   try {
-    const update = { profile: { school, kidCount, bio } };
-
     if (req.file) {
-      update.profile.profilePic = {
-        data: new Binary(req.file.buffer),
-        contentType: req.file.mimetype,
-      };
+      const resizedImage = await sharp(req.file.buffer)
+        .resize({ width: 200, height: 200 })
+        .toFormat("jpeg")
+        .toBuffer();
+      profilePic = resizedImage.toString("base64");
     }
-    await usersCollection.updateOne({ _id: new ObjectId(req.userId) }, [
-      { $set: update },
-    ]);
 
-    res.json({ message: "Profile updated successfully" });
+    const update = { profile: { school, kidCount, bio, profilePic } };
+    const user = await User.findOneAndUpdate(
+      { _id: req.userId },
+      { $set: update },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      message: "Profile updated successfully",
+      profile: user.profile,
+    });
   } catch (error) {
     console.error("Error updating profile:", error);
     res.status(500).json({ message: "Error updating profile" });
   }
 };
 
+// Fetch User Profile
 const getUserProfile = async (req, res) => {
-  console.log("url:", req.url);
   try {
-    const user = await usersCollection.findOne({
-      _id: new ObjectId(req.userId),
-    });
+    const user = await User.findById(req.userId).select("username", "profile");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({ profile: user.profile });
+    res.json({
+      message: "Profile fetched successfully",
+      profile: user.profile,
+    });
   } catch (error) {
     console.error("Error fetching profile:", error);
     res.status(500).json({ message: "Error fetching profile" });
@@ -155,22 +201,38 @@ const getUserProfile = async (req, res) => {
 };
 
 const updateUserProfile = async (req, res) => {
-  const { school, kidCount, bio, profilePic } = req.body;
+  const { school, kidCount, bio } = req.body;
+  let profilePic = null;
 
   try {
-    const update = { profile: { school, kidCount, bio, profilePic } };
-    const user = await usersCollection.findOneAndUpdate(
-      { _id: new ObjectId(req.userId) },
-      { $set: update }
+    if (req.file) {
+      const resizedImage = await sharp(req.file.buffer)
+        .resize({ width: 200, height: 200 })
+        .toFormat("jpeg")
+        .toBuffer();
+      profilePic = resizedImage.toString("base64");
+    }
+
+    const update = {
+      ...(school && { "profile.school": school }),
+      ...(kidCount && { "profile.kidCount": kidCount }),
+      ...(bio && { "profile.bio": bio }),
+      ...(profilePic && { "profile.profilePic": profilePic }),
+    };
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $set: update },
+      { new: true }
     );
 
-    if (!user.value) {
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     res.json({
       message: "Profile updated successfully",
-      profile: user.value.profile,
+      profile: user.profile,
     });
   } catch (error) {
     console.error("Error updating profile:", error);
@@ -178,56 +240,10 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-const newGroup = async (req, res) => {
-  const userId = req.userId;
-  const { groupData } = req.body;
-  const { groupName, schoolName, schoolLocation, meetupPoint, startTime } =
-    groupData;
-  const parsedSchoolLocation = parseCoordinates(schoolLocation);
-  const parsedMeetupPoint = parseCoordinates(meetupPoint);
-
-  const newGroup = {
-    creator: new ObjectId(userId),
-    groupName,
-    schoolName,
-    schoolLocation: parsedSchoolLocation,
-    meetupPoint: parsedMeetupPoint,
-    startTime,
-  };
-
-  try {
-    const result = await groupsCollection.insertOne(newGroup);
-
-    res.json({
-      message: "Group created successfully",
-      groupId: result.insertedId,
-    });
-  } catch (error) {
-    console.error("Error creating group:", error);
-    res.status(500).json({ message: "Error creating group" });
-  }
-};
-
-const getGroup = async (req, res) => {
-  try {
-    const groups = await groupsCollection.findOne({
-      creator: new ObjectId(req.userId),
-    });
-    res.json({ groups });
-  } catch (error) {
-    console.error("Error fetching groups:", error);
-    res.status(500).json({ message: "Error fetching groups" });
-  }
-};
-
-function parseCoordinates(coordinates) {
-  const [latitude, longitude] = coordinates.split(",");
-  return { latitude: parseFloat(latitude), longitude: parseFloat(longitude) };
-}
-
+// Delete User Account
 const deleteAccount = async (req, res) => {
   try {
-    await usersCollection.deleteOne({ _id: new ObjectId(req.userId) });
+    await User.deleteOne({ _id: req.userId });
     res.status(200).json({ message: "Account deleted successfully" });
   } catch (error) {
     console.error("Error deleting account:", error);
@@ -235,6 +251,7 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+// Routes
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post(
@@ -243,15 +260,13 @@ router.post(
   upload.single("profilePic"),
   completeUserProfile
 );
-router.get("/get-profile", authenticateToken, getUserProfile);
 router.put(
   "/update-profile",
   authenticateToken,
   upload.single("profilePic"),
   updateUserProfile
 );
-router.get("/get-group", authenticateToken, getGroup);
-router.post("/new-group", authenticateToken, newGroup);
+router.get("/get-profile", authenticateToken, getUserProfile);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 
-module.exports = { router, connectToMongoDB };
+module.exports = { router, connectToMongoDB, User };
