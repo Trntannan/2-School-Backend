@@ -5,6 +5,7 @@ const multer = require("multer");
 const sharp = require("sharp");
 const mongoose = require("mongoose");
 const User = require("../models/user");
+const { ObjectId } = require("mongodb");
 require("dotenv").config();
 
 const router = express.Router();
@@ -184,7 +185,9 @@ const completeUserProfile = async (req, res) => {
 // Fetch User Profile
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select("username", "profile");
+    const user = await User.findOne({
+      _id: new ObjectId(req.userId),
+    });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
