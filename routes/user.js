@@ -5,6 +5,7 @@ const multer = require("multer");
 const sharp = require("sharp");
 const mongoose = require("mongoose");
 const User = require("../models/user");
+const Group = require("../models/group");
 const { ObjectId } = require("mongodb");
 require("dotenv").config();
 
@@ -53,6 +54,37 @@ const initializeCollections = async () => {
         password: "a",
       }).save();
       console.log("'users' collection initialized");
+    }
+
+    const groupExists = await Group.findOne();
+    if (!groupExists) {
+      await new Group({
+        name: "init-group",
+        members: [],
+        routes: [
+          {
+            start: {
+              latitude: 0,
+              longitude: 0,
+            },
+            end: {
+              latitude: 0,
+              longitude: 0,
+            },
+            waypoints: [
+              {
+                name: "init-waypoint",
+                latitude: 0,
+                longitude: 0,
+              },
+            ],
+            createdAt: new Date(),
+          },
+        ],
+        startTime: new Date(),
+        walkTime: 30,
+      }).save();
+      console.log("'groups' collection initialized");
     }
   } catch (error) {
     console.error("Error initializing collections:", error);
@@ -185,21 +217,32 @@ const completeUserProfile = async (req, res) => {
 // Fetch User Profile
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findOne({
-      _id: new ObjectId(req.userId),
-    });
+    if (!ObjectId.isValid(req.userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    const user = await User.findOne(
+      { _id: new ObjectId(req.userId) },
+      { username: 1, profile: 1 }
+    );
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({
+    const { username, profile } = user;
+
+    res.status(200).json({
       message: "Profile fetched successfully",
-      profile: user.profile,
+      username,
+      profile,
     });
   } catch (error) {
-    console.error("Error fetching profile:", error);
-    res.status(500).json({ message: "Error fetching profile" });
+    console.error("Error fetching profile:", error.message, {
+      userId: req.userId,
+      stack: error.stack,
+    });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -254,7 +297,53 @@ const deleteAccount = async (req, res) => {
   }
 };
 
-// Routes
+// newGroup
+const newGroup = async (req, res) => {
+  const userId = req.userId;
+  const { groupData } = req.body;
+  const { groupName, endLocation, meetupPoint, startTime } = groupData;
+
+  const parsedEndLocation = parseCoordinates(endLocation);
+  const parsedMeetupPoint = parseCoordinates(meetupPoint);
+
+  const newGroup = new Group({
+    name: groupName,
+    creator: new mongoose.Types.ObjectId(userId),
+    startTime: new Date(startTime),
+    members: [userId],
+    routes: [
+      {
+        start: parsedMeetupPoint,
+        end: parsedEndLocation,
+      },
+    ],
+  });
+
+  try {
+    const result = await newGroup.save();
+    res.json({ message: "Group created successfully", groupId: result._id });
+  } catch (error) {
+    console.error("Error creating group:", error);
+    res.status(500).json({ message: "Error creating group" });
+  }
+};
+
+// getGroup
+const getGroup = async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    const groups = await Group.find({ creator: userId }).populate(
+      "members",
+      "name profilePic"
+    );
+
+    res.json({ groups });
+  } catch (error) {
+    console.error("Error fetching groups:", error);
+    res.status(500).json({ message: "Error fetching groups" });
+  }
+};
+
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post(
@@ -270,6 +359,8 @@ router.put(
   updateUserProfile
 );
 router.get("/get-profile", authenticateToken, getUserProfile);
+router.get("/get-group", authenticateToken, getGroup);
+router.post("/new-group", authenticateToken, newGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 
 module.exports = { router, connectToMongoDB, User };
