@@ -306,21 +306,36 @@ const newGroup = async (req, res) => {
   const parsedEndLocation = parseCoordinates(endLocation);
   const parsedMeetupPoint = parseCoordinates(meetupPoint);
 
-  const newGroup = new Group({
-    name: groupName,
-    startTime: new Date(startTime),
-    members: [userId],
-    routes: [
-      {
-        start: parsedMeetupPoint,
-        end: parsedEndLocation,
-      },
-    ],
-  });
-
   try {
-    const result = await newGroup.save();
-    res.json({ message: "Group created successfully", groupId: result._id });
+    // Add group data to the user’s groups array
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        $push: {
+          groups: {
+            groupName,
+            startTime: new Date(startTime),
+            routes: [
+              {
+                start: parsedMeetupPoint,
+                end: parsedEndLocation,
+              },
+            ],
+            creator: userId,
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      message: "Group created successfully",
+      groups: updatedUser.groups,
+    });
   } catch (error) {
     console.error("Error creating group:", error);
     res.status(500).json({ message: "Error creating group" });
@@ -330,13 +345,11 @@ const newGroup = async (req, res) => {
 // getGroup
 const getGroup = async (req, res) => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.userId);
-    const groups = await Group.find({ creator: userId }).populate(
-      "members",
-      "name profilePic"
-    );
-
-    res.json({ message: "Groups fetched successfully", groups });
+    const user = await User.findById(req.userId, "groups");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({ message: "Groups fetched successfully", groups: user.groups });
   } catch (error) {
     console.error("Error fetching groups:", error);
     res.status(500).json({ message: "Error fetching groups" });
@@ -346,9 +359,18 @@ const getGroup = async (req, res) => {
 // Delete Group
 const handleDelete = async (req, res) => {
   try {
-    const groupId = new mongoose.Types.ObjectId(req.body.groupId);
-    await Group.deleteOne({ _id: groupId });
-    res.json({ message: "Group deleted successfully" });
+    const groupId = req.body.groupId;
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { $pull: { groups: { _id: groupId } } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "Group deleted successfully", groups: user.groups });
   } catch (error) {
     console.error("Error deleting group:", error);
     res.status(500).json({ message: "Error deleting group" });
