@@ -344,6 +344,18 @@ const getGroup = async (req, res) => {
   }
 };
 
+// Delete Group
+const handleDelete = async (req, res) => {
+  try {
+    const groupId = new mongoose.Types.ObjectId(req.body.groupId);
+    await Group.deleteOne({ _id: groupId });
+    res.json({ message: "Group deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting group:", error);
+    res.status(500).json({ message: "Error deleting group" });
+  }
+};
+
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post(
@@ -361,6 +373,7 @@ router.put(
 router.get("/get-profile", authenticateToken, getUserProfile);
 router.get("/get-group", authenticateToken, getGroup);
 router.post("/new-group", authenticateToken, newGroup);
+router.delete("/delete-group", authenticateToken, handleDelete);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 
 module.exports = { router, connectToMongoDB, User };
