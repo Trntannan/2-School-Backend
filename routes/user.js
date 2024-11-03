@@ -308,7 +308,6 @@ const newGroup = async (req, res) => {
 
   const newGroup = new Group({
     name: groupName,
-    creator: new mongoose.Types.ObjectId(userId),
     startTime: new Date(startTime),
     members: [userId],
     routes: [
