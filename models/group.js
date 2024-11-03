@@ -4,6 +4,7 @@ const group = new mongoose.Schema(
   {
     name: { type: String, required: true },
     startTime: { type: Date },
+    creator: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     routes: [
       {

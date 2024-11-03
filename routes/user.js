@@ -337,7 +337,7 @@ const getGroup = async (req, res) => {
       "name profilePic"
     );
 
-    res.json({ groups });
+    res.json({ message: "Groups fetched successfully", groups });
   } catch (error) {
     console.error("Error fetching groups:", error);
     res.status(500).json({ message: "Error fetching groups" });
