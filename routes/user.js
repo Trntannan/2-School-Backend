@@ -55,37 +55,6 @@ const initializeCollections = async () => {
       }).save();
       console.log("'users' collection initialized");
     }
-
-    const groupExists = await Group.findOne();
-    if (!groupExists) {
-      await new Group({
-        name: "init-group",
-        members: [],
-        routes: [
-          {
-            start: {
-              latitude: 0,
-              longitude: 0,
-            },
-            end: {
-              latitude: 0,
-              longitude: 0,
-            },
-            waypoints: [
-              {
-                name: "init-waypoint",
-                latitude: 0,
-                longitude: 0,
-              },
-            ],
-            createdAt: new Date(),
-          },
-        ],
-        startTime: new Date(),
-        walkTime: 30,
-      }).save();
-      console.log("'groups' collection initialized");
-    }
   } catch (error) {
     console.error("Error initializing collections:", error);
     process.exit(1);
@@ -299,7 +268,6 @@ const deleteAccount = async (req, res) => {
 
 // newGroup
 const newGroup = async (req, res) => {
-  const userId = req.userId;
   const { groupData } = req.body;
   const { groupName, endLocation, meetupPoint, startTime } = groupData;
 
@@ -307,34 +275,32 @@ const newGroup = async (req, res) => {
   const parsedMeetupPoint = parseCoordinates(meetupPoint);
 
   try {
-    // Add group data to the user’s groups array
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        $push: {
-          groups: {
-            groupName,
-            startTime: new Date(startTime),
-            routes: [
-              {
-                start: parsedMeetupPoint,
-                end: parsedEndLocation,
-              },
-            ],
-            creator: userId,
+    const update = {
+      group: {
+        groupName,
+        startTime: new Date(startTime),
+        routes: [
+          {
+            start: parsedMeetupPoint,
+            end: parsedEndLocation,
           },
-        },
+        ],
       },
+    };
+
+    const user = await User.findByIdAndUpdate(
+      { _id: req.userId },
+      { $set: update },
       { new: true }
     );
 
-    if (!updatedUser) {
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     res.json({
       message: "Group created successfully",
-      groups: updatedUser.groups,
+      group: user.group,
     });
   } catch (error) {
     console.error("Error creating group:", error);
@@ -345,32 +311,43 @@ const newGroup = async (req, res) => {
 // getGroup
 const getGroup = async (req, res) => {
   try {
-    const user = await User.findById(req.userId, "groups");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!ObjectId.isValid(req.userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
     }
-    res.json({ message: "Groups fetched successfully", groups: user.groups });
-  } catch (error) {
-    console.error("Error fetching groups:", error);
-    res.status(500).json({ message: "Error fetching groups" });
-  }
-};
 
-// Delete Group
-const handleDelete = async (req, res) => {
-  try {
-    const groupId = req.body.groupId;
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      { $pull: { groups: { _id: groupId } } },
-      { new: true }
+    const user = await User.findOne(
+      { _id: new ObjectId(req.userId) },
+      { group: 1 }
     );
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({ message: "Group deleted successfully", groups: user.groups });
+    const { group } = user;
+
+    res.status(200).json({
+      message: "Group fetched successfully",
+      group,
+    });
+  } catch (error) {
+    console.error("Error fetching group:", error.message, {
+      userId: req.userId,
+      stack: error.stack,
+    });
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Delete Group from User
+const handleDelete = async (req, res) => {
+  try {
+    const groupId = new mongoose.Types.ObjectId(req.body.groupId);
+    await User.updateOne(
+      { _id: req.userId },
+      { $pull: { groups: { _id: groupId } } }
+    );
+    res.json({ message: "Group deleted successfully" });
   } catch (error) {
     console.error("Error deleting group:", error);
     res.status(500).json({ message: "Error deleting group" });
