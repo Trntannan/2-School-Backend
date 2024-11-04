@@ -5,8 +5,8 @@ const multer = require("multer");
 const sharp = require("sharp");
 const mongoose = require("mongoose");
 const User = require("../models/user");
-const Group = require("../models/group");
 const { ObjectId } = require("mongodb");
+const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
 const router = express.Router();
@@ -100,6 +100,22 @@ const upload = multer({
 // User Registration
 const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
+  if (!/^[a-zA-Z0-9._%+-]+@example\.com$/.test(email)) {
+    return res
+      .status(400)
+      .json({ message: "Email must be in '@example.com' domain" });
+  }
+  if (
+    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
+      password
+    )
+  ) {
+    return res.status(400).json({
+      message:
+        "Password must be at least 8 characters and include uppercase, number, and special character",
+    });
+  }
+
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -121,32 +137,39 @@ const registerUser = async (req, res) => {
 // User Login
 const loginUser = async (req, res) => {
   const { username, password } = req.body;
-  try {
-    const user = await User.findOne({ username });
-    console.log("user from DB:", user);
+  const user = await User.findOne({ username });
 
-    if (username === "" || password === "") {
-      return res.status(400).json({ message: "Please fill in all fields" });
-    }
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+  if (!user) return res.status(404).json({ message: "User not found" });
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    console.log("passwordMatch:", passwordMatch);
-    if (!passwordMatch) {
-      return res.status(401).json({
-        message: "Invalid password",
+  if (user.loginAttempts >= 5) {
+    return res
+      .status(403)
+      .json({
+        message:
+          "Account locked due to too many failed login attempts. Contact support.",
       });
-    }
-
-    const token = generateToken(user._id);
-    res.status(200).json({ message: "Login successful", token });
-  } catch (error) {
-    console.error("Error logging in:", error);
-    res.status(500).json({ message: "Error logging in" });
   }
+
+  const passwordMatch = await bcrypt.compare(password, user.password);
+  if (!passwordMatch) {
+    user.loginAttempts += 1;
+    await user.save();
+    return res.status(401).json({ message: "Invalid password" });
+  }
+
+  user.loginAttempts = 0;
+  await user.save();
+
+  const token = generateToken(user._id);
+  res.status(200).json({ message: "Login successful", token });
 };
+
+// Rate limiter
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many login attempts. Please try again later.",
+});
 
 // Complete User Profile with Profile Picture Handling
 const completeUserProfile = async (req, res) => {
@@ -355,7 +378,7 @@ const handleDelete = async (req, res) => {
 };
 
 router.post("/register", registerUser);
-router.post("/login", loginUser);
+router.post("/login", loginLimiter, loginUser);
 router.post(
   "/complete-profile",
   authenticateToken,
