@@ -205,7 +205,7 @@ const loginLimiter = rateLimit({
 
 // Complete User Profile with Profile Picture Handling
 const completeUserProfile = async (req, res) => {
-  const { username, school, kidCount, bio } = req.body;
+  const { school, kidCount, bio } = req.body;
   let profilePic = null;
 
   try {
@@ -217,11 +217,7 @@ const completeUserProfile = async (req, res) => {
       profilePic = resizedImage.toString("base64");
     }
 
-    const update = {
-      profile: { school, kidCount, bio, profilePic },
-      ...(username && { username }), // Conditionally include username
-    };
-
+    const update = { profile: { school, kidCount, bio, profilePic } };
     const user = await User.findOneAndUpdate(
       { _id: req.userId },
       { $set: update },
@@ -235,7 +231,6 @@ const completeUserProfile = async (req, res) => {
     res.json({
       message: "Profile updated successfully",
       profile: user.profile,
-      username: user.username, // Return updated username if changed
     });
   } catch (error) {
     console.error("Error updating profile:", error);
