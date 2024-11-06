@@ -157,7 +157,12 @@ const registerUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, email, password: hashedPassword });
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      groupAdded: false,
+    });
     await newUser.save();
 
     const token = generateToken(newUser._id);
