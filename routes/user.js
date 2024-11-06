@@ -241,10 +241,6 @@ const completeUserProfile = async (req, res) => {
 // Fetch User Profile
 const getUserProfile = async (req, res) => {
   try {
-    if (!ObjectId.isValid(req.userId)) {
-      return res.status(400).json({ message: "Invalid user ID" });
-    }
-
     const user = await User.findOne(
       { _id: new ObjectId(req.userId) },
       { username: 1, profile: 1 }
@@ -255,17 +251,9 @@ const getUserProfile = async (req, res) => {
     }
 
     const { username, profile } = user;
-
-    res.status(200).json({
-      message: "Profile fetched successfully",
-      username,
-      profile,
-    });
+    res.status(200).json({ username, profile });
   } catch (error) {
-    console.error("Error fetching profile:", error.message, {
-      userId: req.userId,
-      stack: error.stack,
-    });
+    console.error("Error fetching profile:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
