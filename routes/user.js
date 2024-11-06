@@ -52,8 +52,42 @@ const initializeCollections = async () => {
         username: "init-user",
         email: "init@example.com",
         password: "a",
+        profile: {
+          school: "Initial School",
+          kidCount: 1,
+          bio: "This is the initial user profile bio.",
+          profilePic: {
+            data: Buffer.alloc(0),
+            contentType: "image/png",
+          },
+        },
+        group: {
+          name: "Initial Group",
+          startTime: new Date(),
+          creator: null,
+          members: [],
+          routes: [
+            {
+              start: {
+                latitude: 0,
+                longitude: 0,
+              },
+              end: {
+                latitude: 0,
+                longitude: 0,
+              },
+              waypoints: [
+                {
+                  name: "Initial Waypoint",
+                  latitude: 0,
+                  longitude: 0,
+                },
+              ],
+            },
+          ],
+        },
       }).save();
-      console.log("'users' collection initialized");
+      console.log("'users' collection initialized with an initial user");
     }
   } catch (error) {
     console.error("Error initializing collections:", error);
@@ -106,7 +140,7 @@ const registerUser = async (req, res) => {
       .json({ message: "Email must be in '@example.com' domain" });
   }
   if (
-    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
+    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!.%*?&])[A-Za-z\d@$!.%*?&]{8,}$/.test(
       password
     )
   ) {
@@ -142,12 +176,10 @@ const loginUser = async (req, res) => {
   if (!user) return res.status(404).json({ message: "User not found" });
 
   if (user.loginAttempts >= 5) {
-    return res
-      .status(403)
-      .json({
-        message:
-          "Account locked due to too many failed login attempts. Contact support.",
-      });
+    return res.status(403).json({
+      message:
+        "Account locked due to too many failed login attempts. Contact support.",
+    });
   }
 
   const passwordMatch = await bcrypt.compare(password, user.password);
@@ -396,5 +428,6 @@ router.get("/get-group", authenticateToken, getGroup);
 router.post("/new-group", authenticateToken, newGroup);
 router.delete("/delete-group", authenticateToken, handleDelete);
 router.delete("/delete-account", authenticateToken, deleteAccount);
+router.get("/initialize-server", initializeCollections);
 
 module.exports = { router, connectToMongoDB, User };
