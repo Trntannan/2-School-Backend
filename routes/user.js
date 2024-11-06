@@ -149,7 +149,6 @@ const registerUser = async (req, res) => {
         "Password must be at least 8 characters and include uppercase, number, and special character",
     });
   }
-
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
