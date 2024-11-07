@@ -61,10 +61,12 @@ const initializeCollections = async () => {
         group: {
           name: "The First",
           startTime: "2024-11-08T02:16:00.000+00:00",
-          creator: ObjectId("672caeb227f386af7b75c33a"),
+          creator: "$oid",
+          "672caeb227f386af7b75c33a": "$oid",
           members: [
             {
-              _id: ObjectId("672caeb227f386af7b75c33a"),
+              _id: "$oid",
+              "672caeb227f386af7b75c33a": "$oid",
             },
           ],
           routes: [
