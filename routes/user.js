@@ -49,40 +49,35 @@ const initializeCollections = async () => {
     const userExists = await User.findOne();
     if (!userExists) {
       await new User({
-        username: "init-user",
-        email: "init@example.com",
-        password: "a",
+        username: "bob",
+        email: "bob@example.com",
+        password:
+          "$2a$10$ISbs3S7JkHv3IMPhkdaJVuFb515c1Vsn5nvcNVdd74gDvamS/wtuK",
         profile: {
-          school: "Initial School",
-          kidCount: 1,
-          bio: "This is the initial user profile bio.",
-          profilePic: {
-            data: Buffer.alloc(0),
-            contentType: "image/png",
-          },
+          bio: "Fricking Bob bro....",
+          profilePic:
+            "/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWIC…",
         },
         group: {
-          name: "Initial Group",
-          startTime: new Date(),
-          creator: null,
-          members: [],
+          name: "The First",
+          startTime: "2024-11-08T02:16:00.000+00:00",
+          creator: ObjectId("672caeb227f386af7b75c33a"),
+          members: [
+            {
+              _id: ObjectId("672caeb227f386af7b75c33a"),
+            },
+          ],
           routes: [
             {
               start: {
-                latitude: 0,
-                longitude: 0,
+                latitude: -36.89204110000001,
+                longitude: 174.618699,
               },
               end: {
-                latitude: 0,
-                longitude: 0,
+                latitude: -36.8885554,
+                longitude: 174.6230991,
               },
-              waypoints: [
-                {
-                  name: "Initial Waypoint",
-                  latitude: 0,
-                  longitude: 0,
-                },
-              ],
+              waypoints: [],
             },
           ],
         },
