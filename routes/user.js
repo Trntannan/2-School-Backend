@@ -190,6 +190,7 @@ const loginUser = async (req, res) => {
   if (!passwordMatch) {
     user.loginAttempts += 1;
     await user.save();
+    console.log(`Login attempt failed: ${user.loginAttempts} times`);
     return res.status(401).json({ message: "Invalid password" });
   }
 
@@ -200,11 +201,11 @@ const loginUser = async (req, res) => {
   res.status(200).json({ message: "Login successful", token });
 };
 
-// Rate limiter
+// rateLimit Middleware
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  message: "Too many login attempts. Please try again later.",
+  message: "You Have Exceeded The Login Limit, Account Locked For 15 Minutes",
 });
 
 // Complete User Profile with Profile Picture Handling
