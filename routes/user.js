@@ -317,7 +317,7 @@ const deleteAccount = async (req, res) => {
 };
 
 // newGroup
-router.post("/new-group", authenticateToken, async (req, res) => {
+const newGroup = async (req, res) => {
   const { name, startTime, routes } = req.body;
 
   try {
@@ -343,22 +343,29 @@ router.post("/new-group", authenticateToken, async (req, res) => {
     console.error("Error creating group:", error);
     res.status(500).json({ message: "Failed to create group" });
   }
-});
+};
 
 // getGroup
-router.get("/groups", authenticateToken, async (req, res) => {
+const getGroup = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).populate("groups.members");
+    const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json(user.groups);
+    const group = user.groups.find(
+      (group) => group._id.toString() === req.params.groupId
+    );
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    res.status(200).json(group);
   } catch (error) {
-    console.error("Error fetching groups:", error);
-    res.status(500).json({ message: "Failed to fetch groups" });
+    console.error("Error fetching group:", error);
+    res.status(500).json({ message: "Failed to fetch group" });
   }
-});
+};
 
 // Delete Group from User
 const handleDelete = async (req, res) => {
