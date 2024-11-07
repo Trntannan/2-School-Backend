@@ -6,6 +6,9 @@ require("dotenv").config();
 
 const PORT = process.env.PORT || 5000;
 const app = express();
+app.set("trust proxy", 1);
+app.get("/ip", (request, response) => response.send(request.ip));
+
 app.use(cors());
 app.use(express.json());
 
