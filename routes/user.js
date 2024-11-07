@@ -43,9 +43,6 @@ const connectToMongoDB = async () => {
   }
 };
 
-//initialize server
-connectToMongoDB();
-
 // Initialize User Collection
 const initializeCollections = async () => {
   try {
