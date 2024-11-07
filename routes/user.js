@@ -363,15 +363,19 @@ router.get("/groups", authenticateToken, async (req, res) => {
 // Delete Group from User
 const handleDelete = async (req, res) => {
   try {
-    const groupId = new mongoose.Types.ObjectId(req.body.groupId);
-    await User.updateOne(
-      { _id: req.userId },
-      { $pull: { groups: { _id: groupId } } }
-    );
-    res.json({ message: "Group deleted successfully" });
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    } else {
+      user.groups = user.groups.filter(
+        (group) => group._id.toString() !== req.params.groupId
+      );
+      await user.save();
+      res.json(user.groups);
+    }
   } catch (error) {
     console.error("Error deleting group:", error);
-    res.status(500).json({ message: "Error deleting group" });
+    res.status(500).json({ message: "Failed to delete group" });
   }
 };
 
