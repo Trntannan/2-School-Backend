@@ -14,33 +14,35 @@ const userSchema = new mongoose.Schema(
         contentType: String,
       },
     },
-    group: {
-      name: String,
-      startTime: Date,
-      creator: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-      routes: [
-        {
-          start: {
-            latitude: { type: Number, required: true },
-            longitude: { type: Number, required: true },
-          },
-          end: {
-            latitude: { type: Number, required: true },
-            longitude: { type: Number, required: true },
-          },
-          waypoints: [
-            {
-              name: { type: String, required: true },
+    groups: [
+      {
+        name: { type: String, required: true },
+        startTime: { type: Date, required: true },
+        creator: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+        routes: [
+          {
+            start: {
               latitude: { type: Number, required: true },
               longitude: { type: Number, required: true },
             },
-          ],
-          createdAt: { type: Date, default: Date.now },
-        },
-      ],
-      createdAt: { type: Date, default: Date.now },
-    },
+            end: {
+              latitude: { type: Number, required: true },
+              longitude: { type: Number, required: true },
+            },
+            waypoints: [
+              {
+                name: { type: String },
+                latitude: { type: Number },
+                longitude: { type: Number },
+              },
+            ],
+            createdAt: { type: Date, default: Date.now },
+          },
+        ],
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   {
     versionKey: false,

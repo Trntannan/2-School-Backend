@@ -317,77 +317,48 @@ const deleteAccount = async (req, res) => {
 };
 
 // newGroup
-const newGroup = async (req, res) => {
-  const { groupData } = req.body;
-  const { groupName, endLocation, meetupPoint, startTime } = groupData;
-
-  const parsedEndLocation = parseCoordinates(endLocation);
-  const parsedMeetupPoint = parseCoordinates(meetupPoint);
+router.post("/new-group", authenticateToken, async (req, res) => {
+  const { name, startTime, routes } = req.body;
 
   try {
-    const update = {
-      group: {
-        groupName,
-        startTime: new Date(startTime),
-        routes: [
-          {
-            start: parsedMeetupPoint,
-            end: parsedEndLocation,
-          },
-        ],
-      },
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const newGroup = {
+      name,
+      startTime,
+      creator: user._id,
+      members: [user._id],
+      routes,
+      createdAt: new Date(),
     };
 
-    const user = await User.findByIdAndUpdate(
-      { _id: req.userId },
-      { $set: update },
-      { new: true }
-    );
+    user.groups.push(newGroup);
+    await user.save();
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json({
-      message: "Group created successfully",
-      group: user.group,
-    });
+    res.status(201).json(newGroup);
   } catch (error) {
     console.error("Error creating group:", error);
-    res.status(500).json({ message: "Error creating group" });
+    res.status(500).json({ message: "Failed to create group" });
   }
-};
+});
 
 // getGroup
-const getGroup = async (req, res) => {
+router.get("/groups", authenticateToken, async (req, res) => {
   try {
-    if (!ObjectId.isValid(req.userId)) {
-      return res.status(400).json({ message: "Invalid user ID" });
-    }
-
-    const user = await User.findOne(
-      { _id: new ObjectId(req.userId) },
-      { group: 1 }
-    );
-
+    const user = await User.findById(req.userId).populate("groups.members");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const { group } = user;
-
-    res.status(200).json({
-      message: "Group fetched successfully",
-      group,
-    });
+    res.status(200).json(user.groups);
   } catch (error) {
-    console.error("Error fetching group:", error.message, {
-      userId: req.userId,
-      stack: error.stack,
-    });
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error fetching groups:", error);
+    res.status(500).json({ message: "Failed to fetch groups" });
   }
-};
+});
 
 // Delete Group from User
 const handleDelete = async (req, res) => {
