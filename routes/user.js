@@ -213,7 +213,7 @@ const loginLimiter = rateLimit({
 
 // Complete User Profile with Profile Picture Handling
 const completeUserProfile = async (req, res) => {
-  const { school, kidCount, bio } = req.body;
+  const { bio } = req.body;
   let profilePic = null;
 
   try {
@@ -225,7 +225,7 @@ const completeUserProfile = async (req, res) => {
       profilePic = resizedImage.toString("base64");
     }
 
-    const update = { profile: { school, kidCount, bio, profilePic } };
+    const update = { profile: { bio, profilePic } };
     const user = await User.findOneAndUpdate(
       { _id: req.userId },
       { $set: update },
@@ -267,7 +267,7 @@ const getUserProfile = async (req, res) => {
 };
 
 const updateUserProfile = async (req, res) => {
-  const { username, school, kidCount, bio } = req.body;
+  const { kidCount, bio } = req.body;
   let profilePic = null;
 
   try {
@@ -281,8 +281,6 @@ const updateUserProfile = async (req, res) => {
 
     const update = {
       ...(username && { username }),
-      ...(school && { "profile.school": school }),
-      ...(kidCount && { "profile.kidCount": kidCount }),
       ...(bio && { "profile.bio": bio }),
       ...(profilePic && { "profile.profilePic": profilePic }),
     };
