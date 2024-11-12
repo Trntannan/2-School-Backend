@@ -55,10 +55,7 @@ const initializeCollections = async () => {
           "$2a$10$ISbs3S7JkHv3IMPhkdaJVuFb515c1Vsn5nvcNVdd74gDvamS/wtuK",
         profile: {
           bio: "Fricking Bob bro....",
-          profilePic: {
-            data: Buffer.from("base64-encoded-image-data"),
-            contentType: "image/jpeg",
-          },
+          profilePic: {},
         },
         group: {
           name: "The First",

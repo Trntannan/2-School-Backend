@@ -10,7 +10,6 @@ const userSchema = new mongoose.Schema(
       profilePic: {
         data: Buffer,
         contentType: String,
-        required: false,
       },
     },
     groups: [
