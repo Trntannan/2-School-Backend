@@ -264,7 +264,7 @@ const updateUserProfile = async (req, res) => {
     profilePic = req.body.profilePic;
   }
 
-  const update = { username, bio, profilePic };
+  const update = { username, profile: { bio, profilePic } };
   const user = await User.findOneAndUpdate(
     { _id: req.userId },
     { $set: update },
