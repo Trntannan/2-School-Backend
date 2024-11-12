@@ -251,36 +251,33 @@ const getUserProfile = async (req, res) => {
 };
 
 const updateUserProfile = async (req, res) => {
-  const { username, bio, profilePic } = req.body;
+  const { username, bio } = req.body;
+  let profilePic = null;
 
-  try {
-    const update = { username, profile: { bio, profilePic } };
+  if (req.file) {
+    const resizedImage = await sharp(req.file.buffer)
+      .resize({ width: 200, height: 200 })
+      .toFormat("jpeg")
+      .toBuffer();
+    profilePic = resizedImage.toString("base64");
+  } else {
+    profilePic = req.body.profilePic;
+  }
 
-    if (req.file) {
-      const resizedImage = await sharp(req.file.buffer)
-        .resize({ width: 200, height: 200 })
-        .toFormat("jpeg")
-        .toBuffer();
-      update.profile.profilePic = resizedImage.toString("base64");
-    }
-    const user = await User.findOneAndUpdate(
-      { _id: req.userId },
-      { $set: update },
-      { new: true }
-    );
+  const update = { username, bio, profilePic };
+  const user = await User.findOneAndUpdate(
+    { _id: req.userId },
+    { $set: update },
+    { new: true }
+  );
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
+  if (user) {
     res.json({
       message: "Profile updated successfully",
       profile: user.profile,
-      username: user.username,
     });
-  } catch (error) {
-    console.log("Error updating profile:", error);
-    res.status(500).json({ message: "Error updating profile" });
+  } else {
+    res.status(404).json({ message: "User not found" });
   }
 };
 
