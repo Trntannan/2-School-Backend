@@ -27,28 +27,28 @@ const userSchema = new mongoose.Schema(
           {
             start: {
               latitude: {
-                type: string,
+                type: String,
                 required: true,
               },
               longitude: {
-                type: string,
+                type: String,
                 required: true,
               },
             },
             end: {
               latitude: {
-                type: string,
+                type: String,
                 required: true,
               },
               longitude: {
-                type: string,
+                type: String,
                 required: true,
               },
             },
             waypoints: [
               {
-                latitude: string,
-                longitude: string,
+                latitude: String,
+                longitude: String,
               },
             ],
           },
