@@ -333,23 +333,7 @@ const getGroup = async (req, res) => {
 };
 
 // Delete Group from User
-const handleDelete = async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    } else {
-      user.groups = user.groups.filter(
-        (group) => group._id.toString() !== req.params.groupId
-      );
-      await user.save();
-      res.json(user.groups);
-    }
-  } catch (error) {
-    console.error("Error deleting group:", error);
-    res.status(500).json({ message: "Failed to delete group" });
-  }
-};
+const handleDelete = async (req, res) => {};
 
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
