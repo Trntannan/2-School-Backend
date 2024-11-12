@@ -6,45 +6,58 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     profile: {
-      school: String,
-      kidCount: Number,
-      bio: String,
+      bio: { type: String, required: false },
       profilePic: {
         data: Buffer,
         contentType: String,
+        required: false,
       },
     },
     groups: [
       {
-        name: { type: String, required: true },
-        startTime: { type: Date, required: true },
-        creator: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+        name: {
+          type: String,
+          required: true,
+        },
+        startTime: {
+          type: Date,
+          required: true,
+        },
         routes: [
           {
             start: {
-              latitude: { type: Number, required: true },
-              longitude: { type: Number, required: true },
+              latitude: {
+                type: Number,
+                required: true,
+              },
+              longitude: {
+                type: Number,
+                required: true,
+              },
             },
             end: {
-              latitude: { type: Number, required: true },
-              longitude: { type: Number, required: true },
+              latitude: {
+                type: Number,
+                required: true,
+              },
+              longitude: {
+                type: Number,
+                required: true,
+              },
             },
             waypoints: [
               {
-                name: { type: String },
-                latitude: { type: Number },
-                longitude: { type: Number },
+                latitude: Number,
+                longitude: Number,
               },
             ],
-            createdAt: { type: Date, default: Date.now },
           },
         ],
-        createdAt: { type: Date, default: Date.now },
       },
     ],
   },
   {
+    timestamps: true,
     versionKey: false,
   }
 );

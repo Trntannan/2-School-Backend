@@ -63,23 +63,15 @@ const initializeCollections = async () => {
         group: {
           name: "The First",
           startTime: "2024-11-08T02:16:00.000+00:00",
-          creator: "$oid",
-          "672caeb227f386af7b75c33a": "$oid",
-          members: [
-            {
-              _id: "$oid",
-              "672caeb227f386af7b75c33a": "$oid",
-            },
-          ],
           routes: [
             {
               start: {
-                latitude: -36.89204110000001,
-                longitude: 174.618699,
+                latitude: "-36.89204110000001",
+                longitude: "174.618699",
               },
               end: {
-                latitude: -36.8885554,
-                longitude: 174.6230991,
+                latitude: "-36.8885554",
+                longitude: "174.6230991",
               },
               waypoints: [],
             },
@@ -159,7 +151,6 @@ const registerUser = async (req, res) => {
       username,
       email,
       password: hashedPassword,
-      groupAdded: false,
     });
     await newUser.save();
 
@@ -263,26 +254,20 @@ const getUserProfile = async (req, res) => {
 };
 
 const updateUserProfile = async (req, res) => {
-  const { kidCount, bio } = req.body;
-  let profilePic = null;
+  const { username, bio, profilePic } = req.body;
 
   try {
+    const update = { username, profile: { bio, profilePic } };
+
     if (req.file) {
       const resizedImage = await sharp(req.file.buffer)
         .resize({ width: 200, height: 200 })
         .toFormat("jpeg")
         .toBuffer();
-      profilePic = resizedImage.toString("base64");
+      update.profile.profilePic = resizedImage.toString("base64");
     }
-
-    const update = {
-      ...(username && { username }),
-      ...(bio && { "profile.bio": bio }),
-      ...(profilePic && { "profile.profilePic": profilePic }),
-    };
-
-    const user = await User.findByIdAndUpdate(
-      req.userId,
+    const user = await User.findOneAndUpdate(
+      { _id: req.userId },
       { $set: update },
       { new: true }
     );
@@ -297,7 +282,7 @@ const updateUserProfile = async (req, res) => {
       username: user.username,
     });
   } catch (error) {
-    console.error("Error updating profile:", error);
+    console.log("Error updating profile:", error);
     res.status(500).json({ message: "Error updating profile" });
   }
 };
@@ -323,19 +308,15 @@ const newGroup = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const newGroup = {
+    const addGroup = {
       name,
       startTime,
-      creator: user._id,
-      members: [user._id],
       routes,
-      createdAt: new Date(),
     };
-
-    user.groups.push(newGroup);
+    user.groups.push(addGroup);
     await user.save();
 
-    res.status(201).json(newGroup);
+    res.status(201).json(addGroup);
   } catch (error) {
     console.error("Error creating group:", error);
     res.status(500).json({ message: "Failed to create group" });
@@ -345,16 +326,15 @@ const newGroup = async (req, res) => {
 // getGroup
 const getGroup = async (req, res) => {
   try {
-    const userId = req.params.userId;
-    console.log(userId);
-    const user = await User.findById(userId);
+    const user = await User.findById(req.userId).populate("groups");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json(user.groups);
+
+    res.status(200).json(user.groups);
   } catch (error) {
-    console.error("Error fetching groups:", error);
-    res.status(500).json({ message: "Failed to fetch groups" });
+    console.error("Error fetching user groups:", error);
+    res.status(500).json({ message: "Error fetching groups" });
   }
 };
 
