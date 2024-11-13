@@ -35,7 +35,7 @@ const connectToMongoDB = async () => {
     await mongoose.connect(mongoURI, {
       dbName,
     });
-    console.log(Connected to MongoDB database: ${dbName});
+    console.log(`Connected to MongoDB database: ${dbName}`);
     await initializeCollections();
   } catch (error) {
     console.error("MongoDB connection error:", error);
@@ -177,7 +177,7 @@ const loginUser = async (req, res) => {
   if (!passwordMatch) {
     user.loginAttempts += 1;
     await user.save();
-    console.log(Login attempt failed: ${user.loginAttempts} times);
+    console.log(`Login attempt failed: ${user.loginAttempts} times`);
     return res.status(401).json({ message: "Invalid password" });
   }
 
