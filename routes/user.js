@@ -307,7 +307,14 @@ const deleteAccount = async (req, res) => {
 
 // newGroup
 const newGroup = async (req, res) => {
-  const { name, startTime, startLocation, endLocation } = req.body;
+  const {
+    name,
+    startTime,
+    startLatitude,
+    startLongitude,
+    endLatitude,
+    endLongitude,
+  } = req.body;
 
   if (!req.userId) {
     return res.status(400).json({ message: "User ID is required" });
@@ -323,8 +330,14 @@ const newGroup = async (req, res) => {
       startTime,
       routes: [
         {
-          start: startLocation,
-          end: endLocation,
+          start: {
+            latitude: startLatitude,
+            longitude: startLongitude,
+          },
+          end: {
+            latitude: endLatitude,
+            longitude: endLongitude,
+          },
           waypoints: [],
         },
       ],
