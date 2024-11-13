@@ -336,13 +336,9 @@ const newGroup = async (req, res) => {
 // getGroup
 const getGroup = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).populate(
-      "groups.creator groups.members",
-      "username"
-    );
-
-    if (!user || !user.groups || user.groups.length === 0) {
-      return res.status(404).json({ message: "No groups found for this user" });
+    const user = await User.findById(req.userId).populate("groups");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.status(200).json(user.groups);
