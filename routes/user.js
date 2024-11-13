@@ -335,30 +335,17 @@ const newGroup = async (req, res) => {
   const { name, startTime, routes } = req.body;
 
   try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const group = new Group({ name, startTime, routes });
+    await group.save();
 
-    const addGroup = {
-      name,
-      startTime,
-      routes,
-    };
-    user.groups.push(addGroup);
+    const user = await User.findById(req.userId);
+    user.groups.push(group);
     await user.save();
 
-    const globalGroup = new Group({
-      name,
-      startTime,
-      routes,
-    });
-    await globalGroup.save();
-
-    res.status(201).json(addGroup);
+    res.status(201).json(group);
   } catch (error) {
     console.error("Error creating group:", error);
-    res.status(500).json({ message: "Failed to create group" });
+    res.status(500).json({ message: "Error creating group" });
   }
 };
 
