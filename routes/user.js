@@ -5,6 +5,7 @@ const multer = require("multer");
 const sharp = require("sharp");
 const mongoose = require("mongoose");
 const User = require("../models/user");
+const Group = require("../models/group");
 const { ObjectId } = require("mongodb");
 const rateLimit = require("express-rate-limit");
 require("dotenv").config();
@@ -294,35 +295,50 @@ const deleteAccount = async (req, res) => {
 
 // newGroup
 const newGroup = async (req, res) => {
-  const { name, startTime, routes } = req.body;
+  const { groupName, startTime, startLocation, endLocation } = req.body;
+
+  if (!req.userId) {
+    return res.status(400).json({ message: "User ID is required" });
+  }
 
   try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const addGroup = {
-      name,
+    const newGroup = new Group({
+      name: groupName,
+      creator: req.userId,
+      members: [req.userId],
       startTime,
-      routes,
-    };
-    user.groups.push(addGroup);
-    await user.save();
+      routes: [
+        {
+          start: startLocation,
+          end: endLocation,
+          waypoints: [],
+        },
+      ],
+    });
 
-    res.status(201).json(addGroup);
+    await newGroup.save();
+
+    await User.findByIdAndUpdate(req.userId, {
+      $push: { groups: newGroup._id },
+    });
+
+    res.status(201).json({
+      message: "Group created successfully",
+      group: newGroup,
+    });
   } catch (error) {
     console.error("Error creating group:", error);
-    res.status(500).json({ message: "Failed to create group" });
+    res
+      .status(500)
+      .json({ message: "Error creating group", error: error.message });
   }
 };
 
 // all groups
 const allGroups = async (req, res) => {
   try {
-    const users = await User.find({});
-    const allGroups = users.map((user) => user.groups).flat();
-    res.json(allGroups);
+    const groups = await Group.find().populate("creator members", "username");
+    res.json(groups);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error fetching groups" });
@@ -332,35 +348,46 @@ const allGroups = async (req, res) => {
 // getGroup
 const getGroup = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).populate("groups");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    const groups = await Group.find({
+      $or: [{ creator: req.userId }, { members: req.userId }],
+    }).populate("creator members", "username");
+
+    if (!groups || groups.length === 0) {
+      return res.status(404).json({ message: "No groups found for this user" });
     }
 
-    res.status(200).json(user.groups);
+    res.status(200).json(groups);
   } catch (error) {
     console.error("Error fetching user groups:", error);
     res.status(500).json({ message: "Error fetching groups" });
   }
 };
 
-// Delete Group by name
+// Delete Group
 const deleteGroup = async (req, res) => {
-  const { name } = req.body;
+  const { groupId } = req.body;
 
   try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const groupIndex = user.groups.findIndex((group) => group.name === name);
-    if (groupIndex === -1) {
+    const group = await Group.findById(groupId);
+    if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    user.groups.splice(groupIndex, 1);
-    await user.save();
+    if (
+      group.creator.toString() !== req.userId &&
+      !group.members.includes(req.userId)
+    ) {
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to delete this group" });
+    }
+
+    await User.updateMany(
+      { _id: { $in: [group.creator, ...group.members] } },
+      { $pull: { groups: groupId } }
+    );
+
+    await group.remove();
 
     res.status(200).json({ message: "Group deleted successfully" });
   } catch (error) {

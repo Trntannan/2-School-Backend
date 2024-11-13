@@ -12,58 +12,6 @@ const userSchema = new mongoose.Schema(
         contentType: String,
       },
     },
-    groups: [
-      {
-        name: {
-          type: String,
-          required: true,
-        },
-        creator: {
-          type: String,
-          required: true,
-        },
-        members: [
-          {
-            type: String,
-            required: true,
-          },
-        ],
-        startTime: {
-          type: Date,
-          required: true,
-        },
-        routes: [
-          {
-            start: {
-              latitude: {
-                type: String,
-                required: true,
-              },
-              longitude: {
-                type: String,
-                required: true,
-              },
-            },
-            end: {
-              latitude: {
-                type: String,
-                required: true,
-              },
-              longitude: {
-                type: String,
-                required: true,
-              },
-            },
-            waypoints: [
-              {
-                latitude: String,
-                longitude: String,
-              },
-            ],
-          },
-        ],
-      },
-    ],
   },
   {
     timestamps: true,
