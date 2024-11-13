@@ -69,7 +69,7 @@ const initializeCollections = async () => {
         name: "Admin's Group",
         creator: adminUser._id,
         members: [adminUser._id],
-        startTime: new Date("2024-11-08T02:16:00.000+00:00"),
+        startTime: "2024-11-08T02:16:00.000+00:00",
         routes: [
           {
             start: {
