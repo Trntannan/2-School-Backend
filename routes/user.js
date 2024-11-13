@@ -314,7 +314,9 @@ const newGroup = async (req, res) => {
   }
 
   try {
-    const newGroup = new Group({
+    const user = await User.findById(req.userId);
+
+    const newGroup = {
       name: groupName,
       creator: req.userId,
       members: [req.userId],
@@ -326,13 +328,11 @@ const newGroup = async (req, res) => {
           waypoints: [],
         },
       ],
-    });
+    };
 
-    await newGroup.save();
+    user.groups.push(newGroup);
 
-    await User.findByIdAndUpdate(req.userId, {
-      $push: { groups: newGroup._id },
-    });
+    await user.save();
 
     res.status(201).json({
       message: "Group created successfully",
@@ -349,7 +349,13 @@ const newGroup = async (req, res) => {
 // all groups
 const allGroups = async (req, res) => {
   try {
-    const groups = await Group.find().populate("creator members", "username");
+    const users = await User.find().populate(
+      "groups.creator groups.members",
+      "username"
+    );
+
+    const groups = users.flatMap((user) => user.groups);
+
     res.json(groups);
   } catch (err) {
     console.error(err);
@@ -360,15 +366,16 @@ const allGroups = async (req, res) => {
 // getGroup
 const getGroup = async (req, res) => {
   try {
-    const groups = await Group.find({
-      $or: [{ creator: req.userId }, { members: req.userId }],
-    }).populate("creator members", "username");
+    const user = await User.findById(req.userId).populate(
+      "groups.creator groups.members",
+      "username"
+    );
 
-    if (!groups || groups.length === 0) {
+    if (!user || !user.groups || user.groups.length === 0) {
       return res.status(404).json({ message: "No groups found for this user" });
     }
 
-    res.status(200).json(groups);
+    res.status(200).json(user.groups);
   } catch (error) {
     console.error("Error fetching user groups:", error);
     res.status(500).json({ message: "Error fetching groups" });
@@ -380,7 +387,14 @@ const deleteGroup = async (req, res) => {
   const { groupId } = req.body;
 
   try {
-    const group = await Group.findById(groupId);
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const group = user.groups.find((g) => g._id.toString() === groupId);
+
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
@@ -394,12 +408,14 @@ const deleteGroup = async (req, res) => {
         .json({ message: "You are not authorized to delete this group" });
     }
 
+    user.groups = user.groups.filter((g) => g._id.toString() !== groupId);
+
     await User.updateMany(
       { _id: { $in: [group.creator, ...group.members] } },
-      { $pull: { groups: groupId } }
+      { $pull: { groups: { _id: groupId } } }
     );
 
-    await group.remove();
+    await user.save();
 
     res.status(200).json({ message: "Group deleted successfully" });
   } catch (error) {
