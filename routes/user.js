@@ -7,7 +7,6 @@ const mongoose = require("mongoose");
 const User = require("../models/user");
 const { ObjectId } = require("mongodb");
 const rateLimit = require("express-rate-limit");
-const Group = require("../models/group");
 require("dotenv").config();
 
 const router = express.Router();
@@ -58,53 +57,25 @@ const initializeCollections = async () => {
           bio: "Fricking Bob bro....",
           profilePic: {},
         },
-        group: [
-          {
-            name: "The First",
-            creator: {},
-            members: [],
-            startTime: "2024-11-08T02:16:00.000+00:00",
-            routes: [
-              {
-                start: {
-                  latitude: "-36.89204110000001",
-                  longitude: "174.618699",
-                },
-                end: {
-                  latitude: "-36.8885554",
-                  longitude: "174.6230991",
-                },
-                waypoints: [],
+        group: {
+          name: "The First",
+          startTime: "2024-11-08T02:16:00.000+00:00",
+          routes: [
+            {
+              start: {
+                latitude: "-36.89204110000001",
+                longitude: "174.618699",
               },
-            ],
-          },
-        ],
+              end: {
+                latitude: "-36.8885554",
+                longitude: "174.6230991",
+              },
+              waypoints: [],
+            },
+          ],
+        },
       }).save();
       console.log("'users' collection initialized with an initial user");
-    }
-
-    const groupExists = await Group.findOne();
-    if (!groupExists) {
-      await new Group({
-        name: "The First",
-        creator: {},
-        members: [],
-        startTime: "2024-11-08T02:16:00.000+00:00",
-        routes: [
-          {
-            start: {
-              latitude: "-36.89204110000001",
-              longitude: "174.618699",
-            },
-            end: {
-              latitude: "-36.8885554",
-              longitude: "174.6230991",
-            },
-            waypoints: [],
-          },
-        ],
-      }).save();
-      console.log("'groups' collection initialized with an initial group");
     }
   } catch (error) {
     console.error("Error initializing collections:", error);
@@ -255,7 +226,7 @@ const completeUserProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating profile:", error);
-    res.status(500).json({ message: "Error updating profile" });
+    res.status(500).json({ message: "Error updating profile", error: error });
   }
 };
 
@@ -275,7 +246,7 @@ const getUserProfile = async (req, res) => {
     res.status(200).json({ username, profile });
   } catch (error) {
     console.error("Error fetching profile:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal server error", error: error });
   }
 };
 
@@ -317,18 +288,7 @@ const deleteAccount = async (req, res) => {
     res.status(200).json({ message: "Account deleted successfully" });
   } catch (error) {
     console.error("Error deleting account:", error);
-    res.status(500).json({ message: "Error deleting account" });
-  }
-};
-
-// Get all groups
-const getAllGroups = async (req, res) => {
-  try {
-    const groups = await Group.find();
-    res.status(200).json(groups);
-  } catch (error) {
-    console.error("Error fetching groups:", error);
-    res.status(500).json({ message: "Error fetching groups" });
+    res.status(500).json({ message: "Error deleting account", error: error });
   }
 };
 
@@ -337,17 +297,35 @@ const newGroup = async (req, res) => {
   const { name, startTime, routes } = req.body;
 
   try {
-    const group = new Group({ name, startTime, routes });
-    await group.save();
-
     const user = await User.findById(req.userId);
-    user.groups.push(group);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const addGroup = {
+      name,
+      startTime,
+      routes,
+    };
+    user.groups.push(addGroup);
     await user.save();
 
-    res.status(201).json(group);
+    res.status(201).json(addGroup);
   } catch (error) {
     console.error("Error creating group:", error);
-    res.status(500).json({ message: "Error creating group" });
+    res.status(500).json({ message: "Failed to create group" });
+  }
+};
+
+// all groups
+const allGroups = async (req, res) => {
+  try {
+    const users = await User.find({});
+    const allGroups = users.map((user) => user.groups).flat();
+    res.json(allGroups);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching groups" });
   }
 };
 
@@ -407,8 +385,8 @@ router.put(
 );
 router.get("/get-profile", authenticateToken, getUserProfile);
 router.get("/get-group", authenticateToken, getGroup);
-router.get("/all-groups", getAllGroups);
 router.post("/new-group", authenticateToken, newGroup);
+router.get("/all-groups", allGroups);
 router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
