@@ -18,6 +18,16 @@ const userSchema = new mongoose.Schema(
           type: String,
           required: true,
         },
+        creator: {
+          type: String,
+          required: true,
+        },
+        members: [
+          {
+            type: String,
+            required: true,
+          },
+        ],
         startTime: {
           type: Date,
           required: true,

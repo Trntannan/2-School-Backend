@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const User = require("../models/user");
 const { ObjectId } = require("mongodb");
 const rateLimit = require("express-rate-limit");
+const Group = require("../models/group");
 require("dotenv").config();
 
 const router = express.Router();
@@ -59,6 +60,8 @@ const initializeCollections = async () => {
         },
         group: {
           name: "The First",
+          creator: "userId",
+          members: ["userId"],
           startTime: "2024-11-08T02:16:00.000+00:00",
           routes: [
             {
@@ -76,6 +79,30 @@ const initializeCollections = async () => {
         },
       }).save();
       console.log("'users' collection initialized with an initial user");
+    }
+
+    const groupExists = await Group.findOne();
+    if (!groupExists) {
+      await new Group({
+        name: "The First",
+        creator: "userId",
+        members: ["userId"],
+        startTime: "2024-11-08T02:16:00.000+00:00",
+        routes: [
+          {
+            start: {
+              latitude: "-36.89204110000001",
+              longitude: "174.618699",
+            },
+            end: {
+              latitude: "-36.8885554",
+              longitude: "174.6230991",
+            },
+            waypoints: [],
+          },
+        ],
+      }).save();
+      console.log("'groups' collection initialized with an initial group");
     }
   } catch (error) {
     console.error("Error initializing collections:", error);
@@ -292,6 +319,17 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+// Get all groups
+const getAllGroups = async (req, res) => {
+  try {
+    const groups = await Group.find();
+    res.status(200).json(groups);
+  } catch (error) {
+    console.error("Error fetching groups:", error);
+    res.status(500).json({ message: "Error fetching groups" });
+  }
+};
+
 // newGroup
 const newGroup = async (req, res) => {
   const { name, startTime, routes } = req.body;
@@ -309,6 +347,13 @@ const newGroup = async (req, res) => {
     };
     user.groups.push(addGroup);
     await user.save();
+
+    const globalGroup = new Group({
+      name,
+      startTime,
+      routes,
+    });
+    await globalGroup.save();
 
     res.status(201).json(addGroup);
   } catch (error) {
@@ -373,6 +418,7 @@ router.put(
 );
 router.get("/get-profile", authenticateToken, getUserProfile);
 router.get("/get-group", authenticateToken, getGroup);
+router.get("/all-groups", getAllGroups);
 router.post("/new-group", authenticateToken, newGroup);
 router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
