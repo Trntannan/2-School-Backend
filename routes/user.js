@@ -47,11 +47,11 @@ const connectToMongoDB = async () => {
 // Initialize User Collection
 const initializeCollections = async () => {
   try {
-    const userExists = await User.findOne();
+    const userExists = await User.findOne({ username: "admin" });
     if (!userExists) {
       const hashedPassword = bcrypt.hashSync("admin", 10);
 
-      const adminUser = await new User({
+      const adminUser = new User({
         username: "admin",
         email: "admin@example.com",
         password: hashedPassword,
@@ -60,8 +60,9 @@ const initializeCollections = async () => {
           profilePic: {},
         },
         groups: [],
-      }).save();
+      });
 
+      await adminUser.save();
       console.log("'users' collection initialized with an initial admin user");
 
       const group = {
