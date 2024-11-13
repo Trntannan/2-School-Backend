@@ -47,36 +47,47 @@ const connectToMongoDB = async () => {
 // Initialize User Collection
 const initializeCollections = async () => {
   try {
-    const userExists = await User.findOne();
+    const userExists = await User.findOne({ username: "admin" });
     if (!userExists) {
-      await new User({
-        username: "bob",
-        email: "bob@example.com",
-        password:
-          "$2a$10$ISbs3S7JkHv3IMPhkdaJVuFb515c1Vsn5nvcNVdd74gDvamS/wtuK",
+      const hashedPassword = bcrypt.hashSync("admin", 10);
+
+      const adminUser = await new User({
+        username: "admin",
+        email: "admin@example.com",
+        password: hashedPassword,
         profile: {
-          bio: "Fricking Bob bro....",
+          bio: "This is the admin user for testing purposes.",
           profilePic: {},
         },
-        group: {
-          name: "The First",
-          startTime: "2024-11-08T02:16:00.000+00:00",
-          routes: [
-            {
-              start: {
-                latitude: "-36.89204110000001",
-                longitude: "174.618699",
-              },
-              end: {
-                latitude: "-36.8885554",
-                longitude: "174.6230991",
-              },
-              waypoints: [],
-            },
-          ],
-        },
+        groups: [],
       }).save();
-      console.log("'users' collection initialized with an initial user");
+
+      console.log("'users' collection initialized with an initial admin user");
+
+      const group = {
+        name: "Admin's Group",
+        creator: adminUser._id,
+        members: [adminUser._id],
+        startTime: new Date("2024-11-08T02:16:00.000+00:00"),
+        routes: [
+          {
+            start: {
+              latitude: "-36.89204110000001",
+              longitude: "174.618699",
+            },
+            end: {
+              latitude: "-36.8885554",
+              longitude: "174.6230991",
+            },
+            waypoints: [],
+          },
+        ],
+      };
+
+      adminUser.groups.push(group);
+      await adminUser.save();
+
+      console.log("Group 'Admin's Group' added to admin user.");
     }
   } catch (error) {
     console.error("Error initializing collections:", error);
