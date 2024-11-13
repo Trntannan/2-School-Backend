@@ -47,7 +47,7 @@ const connectToMongoDB = async () => {
 // Initialize User Collection
 const initializeCollections = async () => {
   try {
-    const userExists = await User.findOne({ username: "admin" });
+    const userExists = await User.findOne();
     if (!userExists) {
       const hashedPassword = bcrypt.hashSync("admin", 10);
 
