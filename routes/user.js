@@ -58,25 +58,35 @@ const initializeCollections = async () => {
           bio: "Fricking Bob bro....",
           profilePic: {},
         },
-        group: {
-          name: "The First",
-          creator: "userId",
-          members: ["userId"],
-          startTime: "2024-11-08T02:16:00.000+00:00",
-          routes: [
-            {
-              start: {
-                latitude: "-36.89204110000001",
-                longitude: "174.618699",
-              },
-              end: {
-                latitude: "-36.8885554",
-                longitude: "174.6230991",
-              },
-              waypoints: [],
+        group: [
+          {
+            name: "The First",
+            creator: {
+              type: ObjectId,
+              ref: "User",
             },
-          ],
-        },
+            members: [
+              {
+                type: ObjectId,
+                ref: "User",
+              },
+            ],
+            startTime: "2024-11-08T02:16:00.000+00:00",
+            routes: [
+              {
+                start: {
+                  latitude: "-36.89204110000001",
+                  longitude: "174.618699",
+                },
+                end: {
+                  latitude: "-36.8885554",
+                  longitude: "174.6230991",
+                },
+                waypoints: [],
+              },
+            ],
+          },
+        ],
       }).save();
       console.log("'users' collection initialized with an initial user");
     }
@@ -85,8 +95,16 @@ const initializeCollections = async () => {
     if (!groupExists) {
       await new Group({
         name: "The First",
-        creator: "userId",
-        members: ["userId"],
+        creator: {
+          type: ObjectId,
+          ref: "User",
+        },
+        members: [
+          {
+            type: ObjectId,
+            ref: "User",
+          },
+        ],
         startTime: "2024-11-08T02:16:00.000+00:00",
         routes: [
           {
