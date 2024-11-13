@@ -307,7 +307,7 @@ const deleteAccount = async (req, res) => {
 
 // newGroup
 const newGroup = async (req, res) => {
-  const { groupName, startTime, startLocation, endLocation } = req.body;
+  const { name, startTime, startLocation, endLocation } = req.body;
 
   if (!req.userId) {
     return res.status(400).json({ message: "User ID is required" });
@@ -317,7 +317,7 @@ const newGroup = async (req, res) => {
     const user = await User.findById(req.userId);
 
     const newGroup = {
-      name: groupName,
+      name,
       creator: req.userId,
       members: [req.userId],
       startTime,
