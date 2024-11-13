@@ -61,16 +61,8 @@ const initializeCollections = async () => {
         group: [
           {
             name: "The First",
-            creator: {
-              type: ObjectId,
-              ref: "User",
-            },
-            members: [
-              {
-                type: ObjectId,
-                ref: "User",
-              },
-            ],
+            creator: {},
+            members: [],
             startTime: "2024-11-08T02:16:00.000+00:00",
             routes: [
               {
@@ -95,16 +87,8 @@ const initializeCollections = async () => {
     if (!groupExists) {
       await new Group({
         name: "The First",
-        creator: {
-          type: ObjectId,
-          ref: "User",
-        },
-        members: [
-          {
-            type: ObjectId,
-            ref: "User",
-          },
-        ],
+        creator: {},
+        members: [],
         startTime: "2024-11-08T02:16:00.000+00:00",
         routes: [
           {
