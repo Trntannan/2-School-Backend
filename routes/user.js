@@ -332,8 +332,25 @@ const getGroup = async (req, res) => {
   }
 };
 
-// Delete Group from User
-const handleDelete = async (req, res) => {};
+// Delete Group by name
+const deleteGroup = async (req, res) => {
+  const { name } = req.body;
+  try {
+    const user = await User.findById(req.userId);
+    const group = user.groups.find((group) => group.name === name);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    user.groups = user.groups.filter((group) => group.name !== name);
+    await user.save();
+
+    res.status(200).json({ message: "Group deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting group:", error);
+    res.status(500).json({ message: "Error deleting group" });
+  }
+};
 
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
@@ -352,7 +369,7 @@ router.put(
 router.get("/get-profile", authenticateToken, getUserProfile);
 router.get("/get-group", authenticateToken, getGroup);
 router.post("/new-group", authenticateToken, newGroup);
-router.delete("/delete-group", authenticateToken, handleDelete);
+router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
 
