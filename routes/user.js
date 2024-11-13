@@ -335,14 +335,19 @@ const getGroup = async (req, res) => {
 // Delete Group by name
 const deleteGroup = async (req, res) => {
   const { name } = req.body;
+
   try {
     const user = await User.findById(req.userId);
-    const group = user.groups.find((group) => group.name === name);
-    if (!group) {
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const groupIndex = user.groups.findIndex((group) => group.name === name);
+    if (groupIndex === -1) {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    user.groups = user.groups.filter((group) => group.name !== name);
+    user.groups.splice(groupIndex, 1);
     await user.save();
 
     res.status(200).json({ message: "Group deleted successfully" });
