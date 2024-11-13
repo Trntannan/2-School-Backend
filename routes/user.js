@@ -5,7 +5,6 @@ const multer = require("multer");
 const sharp = require("sharp");
 const mongoose = require("mongoose");
 const User = require("../models/user");
-const Group = require("../models/group");
 const { ObjectId } = require("mongodb");
 const rateLimit = require("express-rate-limit");
 require("dotenv").config();
@@ -36,7 +35,7 @@ const connectToMongoDB = async () => {
     await mongoose.connect(mongoURI, {
       dbName,
     });
-    console.log(`Connected to MongoDB database: ${dbName}`);
+    console.log(Connected to MongoDB database: ${dbName});
     await initializeCollections();
   } catch (error) {
     console.error("MongoDB connection error:", error);
@@ -47,48 +46,36 @@ const connectToMongoDB = async () => {
 // Initialize User Collection
 const initializeCollections = async () => {
   try {
-    const userExists = await User.findOne({ username: "admin" });
+    const userExists = await User.findOne();
     if (!userExists) {
-      const hashedPassword = bcrypt.hashSync("admin", 10);
-
-      const adminUser = new User({
+      await new User({
         username: "admin",
         email: "admin@example.com",
-        password: hashedPassword,
+        password:
+          "$2a$10$ISbs3S7JkHv3IMPhkdaJVuFb515c1Vsn5nvcNVdd74gDvamS/wtuK",
         profile: {
-          bio: "This is the admin user for testing purposes.",
+          bio: "Fricking Bob bro....",
           profilePic: {},
         },
-        groups: {},
-      });
-
-      await adminUser.save();
-      console.log("'users' collection initialized with an initial admin user");
-
-      const group = {
-        name: "Admin's Group",
-        creator: adminUser._id,
-        members: [adminUser._id],
-        startTime: "2024-11-08T02:16:00.000+00:00",
-        routes: [
-          {
-            start: {
-              latitude: "-36.89204110000001",
-              longitude: "174.618699",
+        group: {
+          name: "The First",
+          startTime: "2024-11-08T02:16:00.000+00:00",
+          routes: [
+            {
+              start: {
+                latitude: "-36.89204110000001",
+                longitude: "174.618699",
+              },
+              end: {
+                latitude: "-36.8885554",
+                longitude: "174.6230991",
+              },
+              waypoints: [],
             },
-            end: {
-              latitude: "-36.8885554",
-              longitude: "174.6230991",
-            },
-            waypoints: [],
-          },
-        ],
-      };
-
-      adminUser.groups.push(group);
-      await adminUser.save();
-
-      console.log("Group 'Admin's Group' added to admin user.");
+          ],
+        },
+      }).save();
+      console.log("'users' collection initialized with an initial user");
     }
   } catch (error) {
     console.error("Error initializing collections:", error);
@@ -190,7 +177,7 @@ const loginUser = async (req, res) => {
   if (!passwordMatch) {
     user.loginAttempts += 1;
     await user.save();
-    console.log(`Login attempt failed: ${user.loginAttempts} times`);
+    console.log(Login attempt failed: ${user.loginAttempts} times);
     return res.status(401).json({ message: "Invalid password" });
   }
 
@@ -239,7 +226,7 @@ const completeUserProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating profile:", error);
-    res.status(500).json({ message: "Error updating profile", error: error });
+    res.status(500).json({ message: "Error updating profile" });
   }
 };
 
@@ -259,7 +246,7 @@ const getUserProfile = async (req, res) => {
     res.status(200).json({ username, profile });
   } catch (error) {
     console.error("Error fetching profile:", error);
-    res.status(500).json({ message: "Internal server error", error: error });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -301,91 +288,41 @@ const deleteAccount = async (req, res) => {
     res.status(200).json({ message: "Account deleted successfully" });
   } catch (error) {
     console.error("Error deleting account:", error);
-    res.status(500).json({ message: "Error deleting account", error: error });
+    res.status(500).json({ message: "Error deleting account" });
   }
 };
 
 // newGroup
 const newGroup = async (req, res) => {
-  const {
-    name,
-    startTime,
-    startLatitude,
-    startLongitude,
-    endLatitude,
-    endLongitude,
-  } = req.body;
-
-  if (!req.userId) {
-    return res.status(400).json({ message: "User ID is required" });
-  }
+  const { name, startTime, routes } = req.body;
 
   try {
     const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    const newGroup = {
+    const addGroup = {
       name,
-      creator: req.userId,
-      members: [req.userId],
       startTime,
-      routes: [
-        {
-          start: {
-            latitude: startLatitude,
-            longitude: startLongitude,
-          },
-          end: {
-            latitude: endLatitude,
-            longitude: endLongitude,
-          },
-          waypoints: [],
-        },
-      ],
+      routes,
     };
-
-    user.groups.push(newGroup);
-
+    user.groups.push(addGroup);
     await user.save();
 
-    res.status(201).json({
-      message: "Group created successfully",
-      group: newGroup,
-    });
+    res.status(201).json(addGroup);
   } catch (error) {
     console.error("Error creating group:", error);
-    res
-      .status(500)
-      .json({ message: "Error creating group", error: error.message });
-  }
-};
-
-// all groups
-const allGroups = async (req, res) => {
-  try {
-    const users = await User.find().populate(
-      "groups.creator groups.members",
-      "username"
-    );
-
-    const groups = users.flatMap((user) => user.groups);
-
-    res.json(groups);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error fetching groups" });
+    res.status(500).json({ message: "Failed to create group" });
   }
 };
 
 // getGroup
 const getGroup = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).populate(
-      "groups.creator groups.members",
-      "username"
-    );
-
-    if (!user || !user.groups || user.groups.length === 0) {
-      return res.status(404).json({ message: "No groups found for this user" });
+    const user = await User.findById(req.userId).populate("groups");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.status(200).json(user.groups);
@@ -395,39 +332,22 @@ const getGroup = async (req, res) => {
   }
 };
 
-// Delete Group
+// Delete Group by name
 const deleteGroup = async (req, res) => {
-  const { groupId } = req.body;
+  const { name } = req.body;
 
   try {
     const user = await User.findById(req.userId);
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const group = user.groups.find((g) => g._id.toString() === groupId);
-
-    if (!group) {
+    const groupIndex = user.groups.findIndex((group) => group.name === name);
+    if (groupIndex === -1) {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    if (
-      group.creator.toString() !== req.userId &&
-      !group.members.includes(req.userId)
-    ) {
-      return res
-        .status(403)
-        .json({ message: "You are not authorized to delete this group" });
-    }
-
-    user.groups = user.groups.filter((g) => g._id.toString() !== groupId);
-
-    await User.updateMany(
-      { _id: { $in: [group.creator, ...group.members] } },
-      { $pull: { groups: { _id: groupId } } }
-    );
-
+    user.groups.splice(groupIndex, 1);
     await user.save();
 
     res.status(200).json({ message: "Group deleted successfully" });
@@ -454,7 +374,6 @@ router.put(
 router.get("/get-profile", authenticateToken, getUserProfile);
 router.get("/get-group", authenticateToken, getGroup);
 router.post("/new-group", authenticateToken, newGroup);
-router.get("/all-groups", allGroups);
 router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
