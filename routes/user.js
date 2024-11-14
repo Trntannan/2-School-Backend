@@ -337,7 +337,7 @@ const deleteGroup = async (req, res) => {
   const { name } = req.body;
 
   try {
-    const user = await User.deleteOne({ _id: req.userId });
+    const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -349,6 +349,8 @@ const deleteGroup = async (req, res) => {
 
     user.groups.splice(groupIndex, 1);
     await user.save();
+
+    res.status(200).json({ message: "Group deleted successfully" });
   } catch (error) {
     console.error("Error deleting group:", error);
     res.status(500).json({ message: "Error deleting group" });
