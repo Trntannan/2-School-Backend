@@ -121,7 +121,7 @@ const upload = multer({
 
 // User Registration
 const registerUser = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password: hashedPassword } = req.body;
   if (!/^[a-zA-Z0-9._%+-]+@example\.com$/.test(email)) {
     return res
       .status(400)
