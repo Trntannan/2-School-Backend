@@ -122,10 +122,10 @@ const upload = multer({
 // User Registration
 const registerUser = async (req, res) => {
   const { username, email, password: hashedPassword } = req.body;
-  if (!/^[a-zA-Z0-9._%+-]+@example\.com$/.test(email)) {
-    return res
-      .status(400)
-      .json({ message: "Email must be in '@example.com' domain" });
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: "Invalid email format" });
   }
 
   try {
@@ -341,11 +341,23 @@ const deleteGroup = async (req, res) => {
 // get every group in the 'users' collection
 const getAllGroups = async (req, res) => {
   try {
-    const allGroups = await User.find({}).populate("allGroups");
+    const users = await User.find();
+    let allGroups = {};
+
+    for (const user of users) {
+      const groupsArr = user.groups;
+      for (let i = 0; i < groupsArr.length; i++) {
+        const group = groupsArr[i];
+        allGroups[i] = { ...group };
+      }
+    }
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
     res.status(200).json(allGroups);
   } catch (error) {
-    console.error("Error fetching allGroups:", error);
-    res.status(500).json({ message: "Error fetching allGroups" });
+    console.error("Error fetching user groups:", error);
+    res.status(500).json({ message: "Error fetching groups" });
   }
 };
 
