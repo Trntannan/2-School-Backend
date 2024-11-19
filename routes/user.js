@@ -359,6 +359,39 @@ const getAllGroups = async (req, res) => {
   }
 };
 
+// edit group
+const editGroup = async (req, res) => {
+  const { groupId } = req.params;
+  const { name, startTime, routes } = req.body;
+
+  try {
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const groupIndex = user.groups.findIndex(
+      (group) => group._id.toString() === groupId
+    );
+
+    if (groupIndex === -1) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    user.groups[groupIndex].name = name;
+    user.groups[groupIndex].startTime = startTime;
+    user.groups[groupIndex].routes = routes;
+
+    await user.save();
+
+    res.status(200).json({ message: "Group updated successfully" });
+  } catch (error) {
+    console.error("Error updating group:", error);
+    res.status(500).json({ message: "Error updating group" });
+  }
+};
+
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
 router.post(
@@ -377,6 +410,7 @@ router.get("/get-profile", authenticateToken, getUserProfile);
 router.get("/get-group", authenticateToken, getGroup);
 router.get("/all-groups", authenticateToken, getAllGroups);
 router.post("/new-group", authenticateToken, newGroup);
+router.put("/edit-group", authenticateToken, editGroup);
 router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
