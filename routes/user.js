@@ -127,23 +127,13 @@ const registerUser = async (req, res) => {
       .status(400)
       .json({ message: "Email must be in '@example.com' domain" });
   }
-  if (
-    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!.%*?&])[A-Za-z\d@$!.%*?&]{8,}$/.test(
-      password
-    )
-  ) {
-    return res.status(400).json({
-      message:
-        "Password must be at least 8 characters and include uppercase, number, and special character",
-    });
-  }
+
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       username,
       email,
