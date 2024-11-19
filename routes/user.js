@@ -363,9 +363,9 @@ router.put(
   updateUserProfile
 );
 router.get("/get-profile", authenticateToken, getUserProfile);
-router.post("/groups", authenticateToken, newGroup);
-router.get("/groups", authenticateToken, getGroup);
-router.delete("/groups/:groupId", authenticateToken, deleteGroup);
+router.get("/get-group", authenticateToken, getGroup);
+router.post("/new-group", authenticateToken, newGroup);
+router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
 
