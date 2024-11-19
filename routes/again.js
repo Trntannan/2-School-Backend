@@ -49,8 +49,8 @@ const initializeCollections = async () => {
     const userExists = await User.findOne();
     if (!userExists) {
       await new User({
-        username: "bob",
-        email: "bob@example.com",
+        username: "admin",
+        email: "admin@example.com",
         password:
           "$2a$10$ISbs3S7JkHv3IMPhkdaJVuFb515c1Vsn5nvcNVdd74gDvamS/wtuK",
         profile: {

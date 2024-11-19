@@ -292,7 +292,7 @@ const deleteAccount = async (req, res) => {
   }
 };
 
-// newGroup
+// Group Handling (new, get, delete)
 const newGroup = async (req, res) => {
   const { name, startTime, routes } = req.body;
 
@@ -302,11 +302,7 @@ const newGroup = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const addGroup = {
-      name,
-      startTime,
-      routes,
-    };
+    const addGroup = { name, startTime, routes };
     user.groups.push(addGroup);
     await user.save();
 
@@ -317,7 +313,6 @@ const newGroup = async (req, res) => {
   }
 };
 
-// getGroup
 const getGroup = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("groups");
@@ -327,27 +322,23 @@ const getGroup = async (req, res) => {
 
     res.status(200).json(user.groups);
   } catch (error) {
-    console.error("Error fetching user groups:", error);
+    console.error("Error fetching groups:", error);
     res.status(500).json({ message: "Error fetching groups" });
   }
 };
 
-// Delete Group by name
 const deleteGroup = async (req, res) => {
-  const { name } = req.body;
-
+  const { groupId } = req.params;
   try {
     const user = await User.findById(req.userId);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const groupIndex = user.groups.findIndex((group) => group.name === name);
-    if (groupIndex === -1) {
-      return res.status(404).json({ message: "Group not found" });
-    }
-
-    user.groups.splice(groupIndex, 1);
+    user.groups = user.groups.filter(
+      (group) => group._id.toString() !== groupId
+    );
     await user.save();
 
     res.status(200).json({ message: "Group deleted successfully" });
@@ -372,9 +363,9 @@ router.put(
   updateUserProfile
 );
 router.get("/get-profile", authenticateToken, getUserProfile);
-router.get("/get-group", authenticateToken, getGroup);
-router.post("/new-group", authenticateToken, newGroup);
-router.delete("/delete-group", authenticateToken, deleteGroup);
+router.post("/groups", authenticateToken, newGroup);
+router.get("/groups", authenticateToken, getGroup);
+router.delete("/groups/:groupId", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
 
