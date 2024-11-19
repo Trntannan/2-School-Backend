@@ -348,6 +348,17 @@ const deleteGroup = async (req, res) => {
   }
 };
 
+// get every group in the 'users' collection
+const getAllGroups = async (req, res) => {
+  try {
+    const allGroups = await User.find({}).populate("allGroups");
+    res.status(200).json(allGroups);
+  } catch (error) {
+    console.error("Error fetching allGroups:", error);
+    res.status(500).json({ message: "Error fetching allGroups" });
+  }
+};
+
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
 router.post(
@@ -364,6 +375,7 @@ router.put(
 );
 router.get("/get-profile", authenticateToken, getUserProfile);
 router.get("/get-group", authenticateToken, getGroup);
+router.get("/all-groups", authenticateToken, getAllGroups);
 router.post("/new-group", authenticateToken, newGroup);
 router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
