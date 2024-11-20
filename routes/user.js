@@ -317,43 +317,26 @@ const getGroup = async (req, res) => {
   }
 };
 
-const deleteGroup = async (req, res) => {
-  const { groupId } = req.params;
-  try {
-    const user = await User.findById(req.userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    user.groups = user.groups.filter(
-      (group) => group._id.toString() !== groupId
-    );
-    await user.save();
-
-    res.status(200).json({ message: "Group deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting group:", error);
-    res.status(500).json({ message: "Error deleting group" });
-  }
-};
+const deleteGroup = async (req, res) => {};
 
 // get every group in the 'users' collection
 const getAllGroups = async (req, res) => {
   try {
-    const users = await User.find();
-    let allGroups = {};
+    const users = await User.find().lean();
+    const allGroups = [];
 
+    //Extract all groups from all users
     for (const user of users) {
-      const groupsArr = user.groups;
-      for (let i = 0; i < groupsArr.length; i++) {
-        const group = groupsArr[i];
-        allGroups[i] = { ...group };
+      if (user.groups.length > 0) {
+        console.log("Sending response with ", user.username);
+        allGroups.push(...user.groups);
       }
     }
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+
+    if (!users) {
+      return res.status(404).json({ message: "Users not found" });
     }
+
     res.status(200).json(allGroups);
   } catch (error) {
     console.error("Error fetching user groups:", error);
@@ -362,37 +345,7 @@ const getAllGroups = async (req, res) => {
 };
 
 // edit group
-const editGroup = async (req, res) => {
-  const { groupId } = req.params;
-  const { name, startTime, routes } = req.body;
-
-  try {
-    const user = await User.findById(req.userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const groupIndex = user.groups.findIndex(
-      (group) => group._id.toString() === groupId
-    );
-
-    if (groupIndex === -1) {
-      return res.status(404).json({ message: "Group not found" });
-    }
-
-    user.groups[groupIndex].name = name;
-    user.groups[groupIndex].startTime = startTime;
-    user.groups[groupIndex].routes = routes;
-
-    await user.save();
-
-    res.status(200).json({ message: "Group updated successfully" });
-  } catch (error) {
-    console.error("Error updating group:", error);
-    res.status(500).json({ message: "Error updating group" });
-  }
-};
+const editGroup = async (req, res) => {};
 
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
