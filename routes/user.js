@@ -342,9 +342,6 @@ const getAllGroups = async (req, res) => {
   }
 };
 
-// edit group
-const editGroup = async (req, res) => {};
-
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
 router.post(
@@ -363,7 +360,6 @@ router.get("/get-profile", authenticateToken, getUserProfile);
 router.get("/get-group", authenticateToken, getGroup);
 router.get("/all-groups", authenticateToken, getAllGroups);
 router.post("/new-group", authenticateToken, newGroup);
-router.put("/edit-group", authenticateToken, editGroup);
 router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
