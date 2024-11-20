@@ -317,8 +317,6 @@ const getGroup = async (req, res) => {
   }
 };
 
-const deleteGroup = async (req, res) => {};
-
 // get every group in the 'users' collection
 const getAllGroups = async (req, res) => {
   try {
