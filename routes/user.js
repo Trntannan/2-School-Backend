@@ -342,6 +342,8 @@ const getAllGroups = async (req, res) => {
   }
 };
 
+const deleteGroup = async (req, res) => {};
+
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
 router.post(
