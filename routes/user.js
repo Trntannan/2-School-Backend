@@ -342,7 +342,9 @@ const getAllGroups = async (req, res) => {
   }
 };
 
-const deleteGroup = async (req, res) => {};
+const deleteGroup = async (req, res) => {
+  console.log('Delete group endpoint');
+};
 
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
