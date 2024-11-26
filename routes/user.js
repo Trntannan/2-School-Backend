@@ -343,18 +343,59 @@ const getAllGroups = async (req, res) => {
 // Delete group by group _id. use token to verify user then use groupId to find and delete group from user.groups.object._id
 const deleteGroup = async (req, res) => {
   try {
+    // Fetch the user from the database
     const user = await User.findById(req.userId);
-    console.log(user.groups);
+
     if (!user) {
+      console.log("User not found.");
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Log each group in the user's groups array
+    console.log("User groups before deletion:");
+    user.groups.forEach((group, index) => {
+      console.log(`Group ${index}:`, {
+        id: group._id.toString(),
+        name: group.name,
+        startTime: group.startTime,
+        routes: group.routes,
+      });
+    });
+
+    // Check if the group ID exists in the user's groups
+    const groupExists = user.groups.some(
+      (group) => group._id.toString() === req.params.groupId
+    );
+
+    if (!groupExists) {
+      console.log(
+        `Group with ID ${req.params.groupId} not found in user's groups.`
+      );
+      return res
+        .status(404)
+        .json({ message: "Group not found in user's groups" });
+    }
+
+    // Remove the group with the specified ID
     user.groups = user.groups.filter(
       (group) => group._id.toString() !== req.params.groupId
     );
 
+    // Log the updated groups array
+    console.log("User groups after deletion:");
+    user.groups.forEach((group, index) => {
+      console.log(`Group ${index}:`, {
+        id: group._id.toString(),
+        name: group.name,
+        startTime: group.startTime,
+        routes: group.routes,
+      });
+    });
+
+    // Save the updated user document
     await user.save();
 
+    // Respond with a success message
     res.status(200).json({ message: "Group deleted successfully" });
   } catch (error) {
     console.error("Error deleting group:", error);
