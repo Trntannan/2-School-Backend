@@ -15,28 +15,28 @@ const userSchema = new mongoose.Schema(
     groups: {
       name: {
         type: String,
-        required: true,
+        required: false,
       },
       startTime: {
         type: Date,
-        required: true,
+        required: false,
       },
       routes: [
         {
           start: {
             latitude: {
               type: String,
-              required: true,
+              required: false,
             },
             longitude: {
               type: String,
-              required: true,
+              required: false,
             },
           },
           end: {
             latitude: {
               type: String,
-              required: true,
+              required: false,
             },
             longitude: {
               type: String,

@@ -56,7 +56,7 @@ const initializeCollections = async () => {
           bio: "Fricking Bob bro....",
           profilePic: {},
         },
-        group: {
+        groups: {
           name: "The First",
           startTime: "2024-11-08T02:16:00.000+00:00",
           routes: [
