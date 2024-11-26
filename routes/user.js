@@ -340,22 +340,19 @@ const getAllGroups = async (req, res) => {
   }
 };
 
-// Delete group by group _id
+// Delete group by group _id. use token to verify user then use groupId to find and delete group from user.groups.object._id
 const deleteGroup = async (req, res) => {
-  const { groupId } = req.body;
-
   try {
     const user = await User.findById(req.userId);
+    console.log(user.groups);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    const groupIndex = user.groups.findIndex(
-      (group) => group._id.toString() === groupId
+
+    user.groups = user.groups.filter(
+      (group) => group._id.toString() !== req.params.groupId
     );
-    if (groupIndex === -1) {
-      return res.status(404).json({ message: "Group not found" });
-    }
-    user.groups.splice(groupIndex, 1);
+
     await user.save();
 
     res.status(200).json({ message: "Group deleted successfully" });
