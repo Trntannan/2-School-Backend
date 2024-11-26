@@ -342,7 +342,52 @@ const getAllGroups = async (req, res) => {
   }
 };
 
-const deleteGroup = async (req, res) => {};
+const deleteGroup = async (req, res) => {
+  const { groupId } = req.body;
+
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.groups = user.groups.filter(
+      (group) => group._id.toString() !== groupId
+    );
+
+    await user.save();
+    res.status(200).json({ message: "Group deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting group:", error);
+    res.status(500).json({ message: "Failed to delete group" });
+  }
+};
+
+// const updateGroup = async (req, res) => {
+//   const { groupId, name, startTime, routes } = req.body;
+
+//   try {
+//     const user = await User.findById(req.userId);
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     const group = user.groups.id(groupId);
+//     if (!group) {
+//       return res.status(404).json({ message: "Group not found" });
+//     }
+
+//     if (name) group.name = name;
+//     if (startTime) group.startTime = startTime;
+//     if (routes) group.routes = routes;
+
+//     await user.save();
+//     res.status(200).json({ message: "Group updated successfully", group });
+//   } catch (error) {
+//     console.error("Error updating group:", error);
+//     res.status(500).json({ message: "Failed to update group" });
+//   }
+// };
 
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
