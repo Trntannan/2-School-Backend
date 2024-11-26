@@ -384,7 +384,7 @@ router.get("/get-profile", authenticateToken, getUserProfile);
 router.get("/get-group", authenticateToken, getGroup);
 router.get("/all-groups", authenticateToken, getAllGroups);
 router.post("/new-group", authenticateToken, newGroup);
-router.delete("/delete-group", authenticateToken, deleteGroup);
+router.delete("/delete-group/:groupId", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
 
