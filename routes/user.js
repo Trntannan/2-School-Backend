@@ -319,18 +319,18 @@ const getGroup = async (req, res) => {
 // get every group in the 'users' collection
 const getAllGroups = async (req, res) => {
   try {
+    const userId = req.userId;
     const users = await User.find().lean();
     const allGroups = [];
 
     for (const user of users) {
-      if (user.groups.length > 0) {
-        console.log("Sending response with ", user.username);
+      if (user._id.toString() !== userId && user.groups.length > 0) {
         allGroups.push(...user.groups);
       }
     }
 
-    if (!users) {
-      return res.status(404).json({ message: "Users not found" });
+    if (allGroups.length === 0) {
+      return res.status(404).json({ message: "No groups found." });
     }
 
     res.status(200).json(allGroups);
