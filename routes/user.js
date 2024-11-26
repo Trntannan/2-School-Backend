@@ -317,6 +317,7 @@ const getGroup = async (req, res) => {
 };
 
 // get every group in the 'users' collection
+// get every group in the 'users' collection
 const getAllGroups = async (req, res) => {
   try {
     const userId = req.userId;
@@ -324,7 +325,10 @@ const getAllGroups = async (req, res) => {
     const allGroups = [];
 
     for (const user of users) {
-      if (user._id.toString() !== userId && user.groups.length > 0) {
+      if (user._id.toString() === userId) {
+        continue;
+      }
+      if (user.groups.length > 0) {
         allGroups.push(...user.groups);
       }
     }
@@ -339,20 +343,41 @@ const getAllGroups = async (req, res) => {
     res.status(500).json({ message: "Error fetching groups" });
   }
 };
+// const getAllGroups = async (req, res) => {
+//   try {
+//     const userId = req.userId;
+//     const users = await User.find().lean();
+//     const allGroups = [];
+
+//     for (const user of users) {
+//       if (user._id.toString() !== userId && user.groups.length > 0) {
+//         allGroups.push(...user.groups);
+//       }
+//     }
+
+//     if (allGroups.length === 0) {
+//       return res.status(404).json({ message: "No groups found." });
+//     }
+
+//     res.status(200).json(allGroups);
+//   } catch (error) {
+//     console.error("Error fetching user groups:", error);
+//     res.status(500).json({ message: "Error fetching groups" });
+//   }
+// };
 
 // Delete group by group _id. use token to verify user then use groupId to find and delete group from user.groups.object._id
 const deleteGroup = async (req, res) => {
+  const { groupId } = req.body;
   try {
     // Fetch the user from the database
     const user = await User.findById(req.userId);
 
     if (!user) {
-      console.log("User not found.");
       return res.status(404).json({ message: "User not found" });
     }
 
     // Log each group in the user's groups array
-    console.log("User groups before deletion:");
     user.groups.forEach((group, index) => {
       console.log(`Group ${index}:`, {
         id: group._id.toString(),
@@ -368,9 +393,6 @@ const deleteGroup = async (req, res) => {
     );
 
     if (!groupExists) {
-      console.log(
-        `Group with ID ${req.params.groupId} not found in user's groups.`
-      );
       return res
         .status(404)
         .json({ message: "Group not found in user's groups" });
