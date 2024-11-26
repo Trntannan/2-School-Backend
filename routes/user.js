@@ -343,49 +343,11 @@ const getAllGroups = async (req, res) => {
     res.status(500).json({ message: "Error fetching groups" });
   }
 };
-// const getAllGroups = async (req, res) => {
-//   try {
-//     const userId = req.userId;
-//     const users = await User.find().lean();
-//     const allGroups = [];
 
-//     for (const user of users) {
-//       if (user._id.toString() !== userId && user.groups.length > 0) {
-//         allGroups.push(...user.groups);
-//       }
-//     }
-
-//     if (allGroups.length === 0) {
-//       return res.status(404).json({ message: "No groups found." });
-//     }
-
-//     res.status(200).json(allGroups);
-//   } catch (error) {
-//     console.error("Error fetching user groups:", error);
-//     res.status(500).json({ message: "Error fetching groups" });
-//   }
-// };
-
-// Delete group by group _id. use token to verify user then use groupId to find and delete group from user.groups.object._id
+// Delete group by group ID
 const deleteGroup = async (req, res) => {
-  const { groupId } = req.body;
   try {
-    // Fetch the user from the database
     const user = await User.findById(req.userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Log each group in the user's groups array
-    user.groups.forEach((group, index) => {
-      console.log(`Group ${index}:`, {
-        id: group._id.toString(),
-        name: group.name,
-        startTime: group.startTime,
-        routes: group.routes,
-      });
-    });
 
     // Check if the group ID exists in the user's groups
     const groupExists = user.groups.some(
@@ -402,17 +364,6 @@ const deleteGroup = async (req, res) => {
     user.groups = user.groups.filter(
       (group) => group._id.toString() !== req.params.groupId
     );
-
-    // Log the updated groups array
-    console.log("User groups after deletion:");
-    user.groups.forEach((group, index) => {
-      console.log(`Group ${index}:`, {
-        id: group._id.toString(),
-        name: group.name,
-        startTime: group.startTime,
-        routes: group.routes,
-      });
-    });
 
     // Save the updated user document
     await user.save();
@@ -443,7 +394,7 @@ router.get("/get-profile", authenticateToken, getUserProfile);
 router.get("/get-group", authenticateToken, getGroup);
 router.get("/all-groups", authenticateToken, getAllGroups);
 router.post("/new-group", authenticateToken, newGroup);
-router.delete("/delete-group/:groupId", authenticateToken, deleteGroup);
+router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
 
