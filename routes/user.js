@@ -348,9 +348,10 @@ const getAllGroups = async (req, res) => {
 const deleteGroup = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
+    console.log("User groups:", user.groups);
 
     // Check if the group ID exists in the user's groups
-    const groupExists = user.groups.some(
+    const groupExists = user.groups.find(
       (group) => group._id.toString() === req.params.groupId
     );
 
