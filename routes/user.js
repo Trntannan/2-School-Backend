@@ -285,15 +285,14 @@ const deleteAccount = async (req, res) => {
 // Group Handling (new, get, delete)
 const newGroup = async (req, res) => {
   const { name, startTime, routes } = req.body;
+  const addGroup = { name, startTime, routes };
 
   try {
-    const user = await User.findById(req.userId);
+    const user = await User.findByIdAndUpdate(req.userId, { $push: { object: addGroup}}, { new: true });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const addGroup = { name, startTime, routes };
-    user.groups.push(addGroup);
     await user.save();
 
     res.status(201).json(addGroup);
@@ -305,11 +304,10 @@ const newGroup = async (req, res) => {
 
 const getGroup = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).populate("groups");
+    const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
     res.status(200).json(user.groups);
   } catch (error) {
     console.error("Error fetching groups:", error);
@@ -345,16 +343,18 @@ const getAllGroups = async (req, res) => {
 const deleteGroup = async (req, res) => {
   try {
     //Remove group by name (change to an id in near future)
-    const deletedGroup = await User.findOneAndUpdate({ "_id": req.userId }, { $pull: { "groups": { "name": req.body.name }}});
+    console.log(req.body.groupId);
+    const deletedGroup = await User.findOneAndUpdate({ "_id": req.userId }, { $pull: { "groups": { "_id": req.body.groupId }}});
 
     if(!deletedGroup) {
       res.json({ message: "Group does not exist" });
       return;
     };
+    // console.log(deletedGroup);
 
     //Fetch users remaining groups
     const user = await User.findById(req.userId).populate("groups");
-    console.log(user);
+    console.log(user.groups);
 
   res.status(200).json(user.groups);    
   } catch(err) {
