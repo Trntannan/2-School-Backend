@@ -98,7 +98,7 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, jwtSecret);
-    req.userId = decoded.id;
+    req.user = decoded;
     next();
   } catch (err) {
     res.status(403).json({ message: "Invalid token" });
@@ -343,25 +343,26 @@ const getAllGroups = async (req, res) => {
 };
 
 const deleteGroup = async (req, res) => {
+  const { groupId } = req.params;
+  const userId = req.user.id;
+
   try {
-    //Remove group by name (change to an id in near future)
-    const deletedGroup = await User.findOneAndUpdate(
-      { _id: req.userId },
-      { $pull: { groups: { name: req.body.name } } }
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const groupIndex = user.groups.findIndex(
+      (group) => group._id.toString() === groupId
     );
+    if (groupIndex === -1)
+      return res.status(404).json({ message: "Group not found" });
 
-    if (!deletedGroup) {
-      res.json({ message: "Group does not exist" });
-      return;
-    }
+    user.groups.splice(groupIndex, 1);
+    await user.save();
 
-    //Fetch users remaining groups
-    const user = await User.findById(req.userId).populate("groups");
-    console.log(user);
-
-    res.status(200).json(user.groups);
-  } catch (err) {
-    res.status(500).json({ message: "Error deleting group" });
+    res.status(200).json({ message: "Group deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting group:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
