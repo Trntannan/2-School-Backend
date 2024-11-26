@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const User = require("../models/user");
 const { ObjectId } = require("mongodb");
 const rateLimit = require("express-rate-limit");
+const cors = require("cors");
 require("dotenv").config();
 
 const router = express.Router();
@@ -19,15 +20,13 @@ const app = express();
 app.use(express.json());
 
 // Middleware for CORS
-app.use((res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  next();
-});
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 // MongoDB Connection
 const connectToMongoDB = async () => {
