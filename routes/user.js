@@ -384,27 +384,53 @@ const deleteGroup = async (req, res) => {
   }
 };
 
-const saveQrCode = async (req, res) => {
-  const { qrCodeData } = req.body;
-  const userId = req.userId;
+// accept request, find the group and add the user to the group members array
+// const acceptRequest = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.userId);
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
 
-  try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+//     const group = user.groups.find((group) =>
+//       group._id.equals(new mongoose.Types.ObjectId(req.params.groupId))
+//     );
 
-    user.qrCode = qrCodeData;
-    await user.save();
+//     if (!group) {
+//       return res.status(404).json({ message: "Group not found" });
+//     }
 
-    res.status(200).json({ message: "QR code saved successfully" });
-  } catch (error) {
-    console.error("Error saving QR code:", error);
-    res.status(500).json({ message: "Error saving QR code" });
-  }
-};
+//     group.members.push(user._id);
+//     await group.save();
 
-router.post("/save-qr-code", authenticateToken, saveQrCode);
+//     res.status(200).json({ message: "Request accepted successfully" });
+//   } catch (error) {
+//     console.error("Error accepting request:", error);
+//     res.status(500).json({ message: "Error accepting request" });
+//   }
+// }
+
+// const saveQrCode = async (req, res) => {
+//   const { qrCodeData } = req.body;
+//   const userId = req.userId;
+
+//   try {
+//     const user = await User.findById(userId);
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     user.qrCode = qrCodeData;
+//     await user.save();
+
+//     res.status(200).json({ message: "QR code saved successfully" });
+//   } catch (error) {
+//     console.error("Error saving QR code:", error);
+//     res.status(500).json({ message: "Error saving QR code" });
+//   }
+// };
+
+// router.post("/save-qr-code", authenticateToken, saveQrCode);
 
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
@@ -427,5 +453,7 @@ router.post("/new-group", authenticateToken, newGroup);
 router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
+// router.get("accept-request", authenticateToken, acceptRequest);
+// router.get("refuse-request", authenticateToken, refuseRequest);
 
 module.exports = { router, connectToMongoDB, User };
