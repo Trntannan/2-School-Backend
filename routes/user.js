@@ -317,7 +317,6 @@ const getGroup = async (req, res) => {
 };
 
 // get every group in the 'users' collection
-// get every group in the 'users' collection
 const getAllGroups = async (req, res) => {
   try {
     const userId = req.userId;
@@ -354,8 +353,8 @@ const deleteGroup = async (req, res) => {
     }
 
     // Check if the group ID exists in the user's groups
-    const groupExists = user.groups.find(
-      (group) => group._id.toString() === req.params.groupId
+    const groupExists = user.groups.find((group) =>
+      group._id.equals(mongoose.Types.ObjectId(req.params.groupId))
     );
 
     if (!groupExists) {
@@ -366,7 +365,7 @@ const deleteGroup = async (req, res) => {
 
     // Remove the group with the specified ID
     user.groups = user.groups.filter(
-      (group) => group._id.toString() !== req.params.groupId
+      (group) => !group._id.equals(mongoose.Types.ObjectId(req.params.groupId))
     );
 
     // Save the updated user document
