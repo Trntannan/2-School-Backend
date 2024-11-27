@@ -347,40 +347,23 @@ const getAllGroups = async (req, res) => {
 const deleteGroup = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
-    console.log("User found:", user);
-
     if (!user) {
       console.log("User not found");
       return res.status(404).json({ message: "User not found" });
     }
-
-    console.log("User groups:", user.groups);
-    const existingGroup = user.groups.find((group) =>
-      group._id.equals(new mongoose.Types.ObjectId(req.params.groupId))
+    const deletedGroup = await User.findOneAndUpdate(
+      { _id: req.userId },
+      { $pull: { groups: { _id: req.body.groupId } } },
+      { new: true }
     );
-    console.log("Existing group:", existingGroup);
-
-    if (!existingGroup) {
+    console.log("groupId: ", req.body.groupId);
+    if (!deletedGroup) {
       return res.status(404).json({ message: "Group not found" });
     }
-
-    console.log("Removing group from user's groups array...");
-    user.groups = user.groups.filter(
-      (group) =>
-        !group._id.equals(new mongoose.Types.ObjectId(req.params.groupId))
-    );
-    console.log("Updated user groups:", user.groups);
-
-    console.log("Saving updated user document...");
-    await user.save();
-    console.log("User document saved successfully");
-
     res.status(200).json({ message: "Group deleted successfully" });
   } catch (error) {
     console.error("Error deleting group:", error);
-    res
-      .status(500)
-      .json({ message: "Error deleting group", error: error.message });
+    res.json({ message: "Error deleting group", error: error.message });
   }
 };
 
