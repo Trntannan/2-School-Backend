@@ -343,39 +343,42 @@ const getAllGroups = async (req, res) => {
   }
 };
 
-// Delete group by group ID
+// Delete Group
 const deleteGroup = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
+    console.log("User found:", user);
 
     if (!user) {
+      console.log("User not found");
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if the group ID exists in the user's groups
-    const groupExists = user.groups.find((group) =>
+    const existingGroup = user.groups.find((group) =>
       group._id.equals(mongoose.Types.ObjectId(req.params.groupId))
     );
+    console.log("Existing group:", existingGroup);
 
-    if (!groupExists) {
-      return res
-        .status(404)
-        .json({ message: "Group not found in user's groups" });
+    if (!existingGroup) {
+      return res.status(404).json({ message: "Group not found" });
     }
 
-    // Remove the group with the specified ID
+    console.log("Removing group from user's groups array...");
     user.groups = user.groups.filter(
       (group) => !group._id.equals(mongoose.Types.ObjectId(req.params.groupId))
     );
+    console.log("Updated user groups:", user.groups);
 
-    // Save the updated user document
+    console.log("Saving updated user document...");
     await user.save();
+    console.log("User document saved successfully");
 
-    // Respond with a success message
     res.status(200).json({ message: "Group deleted successfully" });
   } catch (error) {
     console.error("Error deleting group:", error);
-    res.status(500).json({ message: "Error deleting group" });
+    res
+      .status(500)
+      .json({ message: "Error deleting group", error: error.message });
   }
 };
 
