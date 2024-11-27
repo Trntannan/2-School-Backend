@@ -355,7 +355,7 @@ const deleteGroup = async (req, res) => {
     }
 
     const existingGroup = user.groups.find((group) =>
-      group._id.equals(new mongoose.Types.ObjectId(req.params.groupId))
+      group._id.equals(mongoose.Types.ObjectId(req.params.groupId))
     );
     console.log("Existing group:", existingGroup);
 

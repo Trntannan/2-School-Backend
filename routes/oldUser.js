@@ -1,16 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const userController = require("../controllers/userController");
+const userController = require("./controllers/userController");
+const rateLimiter = require("./middlewares/rateLimiter");
 
 router.post("/register", userController.registerUser);
-router.post("/login", userController.loginUser);
-router.get("/:userId/profile", userController.getUserProfile);
-router.put("/:userId/profile", userController.updateUserProfile);
-router.post("/:userId/profile", userController.completeUserProfile);
-router.post("/:userId/groups", userController.createGroup);
-router.get("/:userId/groups", userController.getGroup);
-router.delete("/:userId/groups/:groupId", userController.deleteGroup);
-router.delete("/:userId", userController.deleteAccount);
-router.get("/initialize-server", userController.initializeCollections);
+router.post("/login", rateLimiter, userController.loginUser);
+router.post("/complete-profile", userController.completeUserProfile);
+router.put("/update-profile", userController.updateUserProfile);
+router.get("/get-profile", userController.getUserProfile);
+router.get("/get-group", userController.getGroup);
+router.get("/all-groups", userController.getAllGroups);
+router.post("/new-group", userController.newGroup);
+router.delete("/delete-group", userController.deleteGroup);
+router.delete("/delete-account", userController.deleteAccount);
 
 module.exports = router;
