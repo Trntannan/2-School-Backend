@@ -355,7 +355,7 @@ const deleteGroup = async (req, res) => {
     }
 
     const existingGroup = user.groups.find((group) =>
-      group._id.equals(mongoose.Types.ObjectId(req.params.groupId))
+      group._id.equals(new mongoose.Types.ObjectId(req.params.groupId))
     );
     console.log("Existing group:", existingGroup);
 
@@ -382,6 +382,28 @@ const deleteGroup = async (req, res) => {
       .json({ message: "Error deleting group", error: error.message });
   }
 };
+
+const saveQrCode = async (req, res) => {
+  const { qrCodeData } = req.body;
+  const userId = req.userId;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.qrCode = qrCodeData;
+    await user.save();
+
+    res.status(200).json({ message: "QR code saved successfully" });
+  } catch (error) {
+    console.error("Error saving QR code:", error);
+    res.status(500).json({ message: "Error saving QR code" });
+  }
+};
+
+router.post("/save-qr-code", authenticateToken, saveQrCode);
 
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);

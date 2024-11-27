@@ -54,6 +54,10 @@ const userSchema = new mongoose.Schema(
         ],
       },
     ],
+    qrCode: {
+      data: Buffer,
+      contentType: String,
+    },
   },
   {
     timestamps: true,
