@@ -354,6 +354,7 @@ const deleteGroup = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    console.log("User groups:", user.groups);
     const existingGroup = user.groups.find((group) =>
       group._id.equals(new mongoose.Types.ObjectId(req.params.groupId))
     );
