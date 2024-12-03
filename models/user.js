@@ -52,6 +52,14 @@ const userSchema = new mongoose.Schema(
             ],
           },
         ],
+        requests: [
+          {
+            userId: {
+              type: String,
+              required: true,
+            },
+          },
+        ],
       },
     ],
     qrCode: {

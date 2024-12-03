@@ -56,23 +56,26 @@ const initializeCollections = async () => {
           bio: "Fricking Bob bro....",
           profilePic: {},
         },
-        group: {
-          name: "The First",
-          startTime: "2024-11-08T02:16:00.000+00:00",
-          routes: [
-            {
-              start: {
-                latitude: "-36.89204110000001",
-                longitude: "174.618699",
+        groups: [
+          {
+            name: "The First",
+            startTime: "2024-11-08T02:16:00.000+00:00",
+            routes: [
+              {
+                start: {
+                  latitude: "-36.89204110000001",
+                  longitude: "174.618699",
+                },
+                end: {
+                  latitude: "-36.8885554",
+                  longitude: "174.6230991",
+                },
+                waypoints: [],
               },
-              end: {
-                latitude: "-36.8885554",
-                longitude: "174.6230991",
-              },
-              waypoints: [],
-            },
-          ],
-        },
+            ],
+            requests: [],
+          },
+        ],
       }).save();
       console.log("'users' collection initialized with an initial user");
     }
@@ -367,32 +370,6 @@ const deleteGroup = async (req, res) => {
   }
 };
 
-// accept request, find the group and add the user to the group members array
-// const acceptRequest = async (req, res) => {
-//   try {
-//     const user = await User.findById(req.userId);
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     const group = user.groups.find((group) =>
-//       group._id.equals(new mongoose.Types.ObjectId(req.params.groupId))
-//     );
-
-//     if (!group) {
-//       return res.status(404).json({ message: "Group not found" });
-//     }
-
-//     group.members.push(user._id);
-//     await group.save();
-
-//     res.status(200).json({ message: "Request accepted successfully" });
-//   } catch (error) {
-//     console.error("Error accepting request:", error);
-//     res.status(500).json({ message: "Error accepting request" });
-//   }
-// }
-
 // const saveQrCode = async (req, res) => {
 //   const { qrCodeData } = req.body;
 //   const userId = req.userId;
@@ -436,6 +413,7 @@ router.post("/new-group", authenticateToken, newGroup);
 router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
+// router.get("/join-group", authenticateToken, joinGroup);
 // router.get("accept-request", authenticateToken, acceptRequest);
 // router.get("refuse-request", authenticateToken, refuseRequest);
 
