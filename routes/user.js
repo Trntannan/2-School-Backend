@@ -373,18 +373,28 @@ const deleteGroup = async (req, res) => {
 // make request, find group in 'users' collection by groupId, add userId to requests array in group
 const joinRequest = async (req, res) => {
   try {
-    const group = await User.findOneAndUpdate(
+    if (!req.body.groupId) {
+      return res.status(400).json({ message: "Group ID is required" });
+    }
+
+    const result = await User.findOneAndUpdate(
       { "groups._id": req.body.groupId },
-      { $push: { "groups.$.requests": req.userId } },
+      {
+        $addToSet: { "groups.$.requests": req.userId },
+      },
       { new: true }
     );
-    if (!group) {
+
+    if (!result) {
       return res.status(404).json({ message: "Group not found" });
     }
+
     res.status(200).json({ message: "Request sent successfully" });
   } catch (error) {
     console.error("Error sending request:", error);
-    res.json({ message: "Error sending request", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error sending request", error: error.message });
   }
 };
 
@@ -431,7 +441,7 @@ router.post("/new-group", authenticateToken, newGroup);
 router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
-router.get("/join-request", joinRequest);
+router.post("/join-request", authenticateToken, joinRequest);
 // router.get("accept-request", authenticateToken, acceptRequest);
 // router.get("refuse-request", authenticateToken, refuseRequest);
 
