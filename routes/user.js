@@ -385,23 +385,30 @@ const joinRequest = async (req, res) => {
   try {
     const groupId = req.body.groupId;
     let targetGroup = null;
+    let targetUser = null;
+
+    const users = await User.find().lean();
 
     for (const user of users) {
       const group = user.groups.find(
         (group) => group._id.toString() === groupId
       );
+
       if (group) {
         targetGroup = group;
+        targetUser = user;
         break;
       }
-      if (targetGroup) {
-        targetGroup.requests.push(req.userId);
-        await user.save();
-        res.status(200).json({ message: "Request sent successfully" });
-        return;
-      }
+    }
+
+    if (targetGroup) {
+      targetGroup.requests.push(req.userId);
+      await targetUser.save();
+      res.status(200).json({ message: "Request sent successfully" });
+    } else {
       res.status(404).json({ message: "Group not found" });
     }
+
     console.log("targetGroup: ", targetGroup);
   } catch (error) {
     console.error("Error sending request:", error);
