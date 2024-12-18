@@ -22,6 +22,14 @@ const userSchema = new mongoose.Schema(
           type: Date,
           required: true,
         },
+        requests: [
+          {
+            userId: {
+              type: String,
+              required: true,
+            },
+          },
+        ],
         routes: [
           {
             start: {
@@ -50,14 +58,6 @@ const userSchema = new mongoose.Schema(
                 longitude: String,
               },
             ],
-          },
-        ],
-        requests: [
-          {
-            userId: {
-              type: String,
-              required: true,
-            },
           },
         ],
       },

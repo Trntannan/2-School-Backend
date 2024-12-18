@@ -370,6 +370,24 @@ const deleteGroup = async (req, res) => {
   }
 };
 
+// make request, find group in 'users' collection by groupId, add userId to requests array in group
+const joinRequest = async (req, res) => {
+  try {
+    const group = await User.findOneAndUpdate(
+      { "groups._id": req.body.groupId },
+      { $push: { "groups.$.requests": req.userId } },
+      { new: true }
+    );
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    res.status(200).json({ message: "Request sent successfully" });
+  } catch (error) {
+    console.error("Error sending request:", error);
+    res.json({ message: "Error sending request", error: error.message });
+  }
+};
+
 // const saveQrCode = async (req, res) => {
 //   const { qrCodeData } = req.body;
 //   const userId = req.userId;
@@ -413,7 +431,7 @@ router.post("/new-group", authenticateToken, newGroup);
 router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
-// router.get("/join-group", authenticateToken, joinGroup);
+router.get("/join-request", authenticateToken, joinRequest);
 // router.get("accept-request", authenticateToken, acceptRequest);
 // router.get("refuse-request", authenticateToken, refuseRequest);
 
