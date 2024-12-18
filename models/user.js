@@ -22,6 +22,14 @@ const userSchema = new mongoose.Schema(
           type: Date,
           required: true,
         },
+        members: [
+          {
+            userId: {
+              type: String,
+              required: true,
+            },
+          },
+        ],
         requests: [
           {
             userId: {
