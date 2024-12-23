@@ -68,8 +68,8 @@ const initializeCollections = async () => {
 };
 
 // Token Generation
-const generateToken = (userId, username) => {
-  return jwt.sign({ id: userId, username }, jwtSecret, {
+const generateToken = (userId, username, tier) => {
+  return jwt.sign({ id: userId, username, tier }, jwtSecret, {
     expiresIn: "1h",
   });
 };
@@ -86,6 +86,7 @@ const authenticateToken = (req, res, next) => {
     const decoded = jwt.verify(token, jwtSecret);
     req.userId = decoded.id;
     req.username = decoded.username;
+    req.tier = decoded.tier;
     next();
   } catch (err) {
     res.status(403).json({ message: "Invalid token" });
