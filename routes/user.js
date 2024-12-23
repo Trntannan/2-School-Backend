@@ -52,30 +52,11 @@ const initializeCollections = async () => {
         email: "admin@example.com",
         password:
           "$2a$10$ISbs3S7JkHv3IMPhkdaJVuFb515c1Vsn5nvcNVdd74gDvamS/wtuK",
-        profile: {
-          bio: "Fricking Bob bro....",
+          groups: [],
+          profile: {
+          bio: "Fricking Admin guy bro....",
           profilePic: {},
-        },
-        groups: [
-          {
-            name: "The First",
-            startTime: "2024-11-08T02:16:00.000+00:00",
-            routes: [
-              {
-                start: {
-                  latitude: "-36.89204110000001",
-                  longitude: "174.618699",
-                },
-                end: {
-                  latitude: "-36.8885554",
-                  longitude: "174.6230991",
-                },
-                waypoints: [],
-              },
-            ],
-            requests: [],
-          },
-        ],
+        }
       }).save();
       console.log("'users' collection initialized with an initial user");
     }
@@ -374,11 +355,9 @@ const joinRequest = async (req, res) => {
     // get the userId from the request
     const userId = req.userId;
     // get the groupId from the request body
-    const groupId = req.body.groupId;
+    const groupId = req.groupId;
     // find the group in the 'users' collection by groupId
-    const group = await User.find((user) =>
-      user.groups.some((g) => g._id.toString() === groupId)
-    );
+    const group = await User.find(
     // if the group is not found, return an error message
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
