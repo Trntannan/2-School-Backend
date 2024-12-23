@@ -52,11 +52,11 @@ const initializeCollections = async () => {
         email: "admin@example.com",
         password:
           "$2a$10$ISbs3S7JkHv3IMPhkdaJVuFb515c1Vsn5nvcNVdd74gDvamS/wtuK",
-          groups: [],
-          profile: {
+        groups: [],
+        profile: {
           bio: "Fricking Admin guy bro....",
           profilePic: {},
-        }
+        },
       }).save();
       console.log("'users' collection initialized with an initial user");
     }
@@ -352,39 +352,39 @@ const deleteGroup = async (req, res) => {
 // make request, find group in 'users' collection by groupId, add userId to requests array in group
 const joinRequest = async (req, res) => {
   try {
-    // get the userId from the request
-    const userId = req.userId;
-    // get the groupId from the request body
-    const groupId = req.groupId;
-    // find the group in the 'users' collection by groupId
-    const group = await User.find(
-    // if the group is not found, return an error message
-    if (!group) {
+    // Extract user and group IDs from request
+    const { userId, groupId } = req;
+
+    // Find the user who owns the group directly
+    const user = await User.findOne({
+      "groups.groupId": groupId,
+    });
+
+    if (!user) {
       return res.status(404).json({ message: "Group not found" });
-    } else {
-      // add the userId to the requests array in the group
-      group.requests.push(userId);
-      // save the group
-      await group.save();
-      // return a success message
-      res.status(200).json({ message: "Request sent successfully" });
     }
+
+    // Find and update the specific group
+    const result = await User.updateOne(
+      {
+        "groups.groupId": groupId,
+        "groups.requests": { $ne: userId },
+      },
+      {
+        $push: { "groups.$.requests": userId },
+      }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res
+        .status(400)
+        .json({ message: "Request already sent or group not found" });
+    }
+
+    res.status(200).json({ message: "Join request sent successfully" });
   } catch (error) {
-    // if there is an error, log it to the console and return an error message
     console.error("Error sending join request:", error);
     res.status(500).json({ message: "Error sending join request" });
-  }
-};
-
-// find all groups in users collection
-const findAllGroups = async (req, res) => {
-  try {
-    const users = await User.find();
-    const groups = users.flatMap((user) => user.groups);
-    res.status(200).json(groups);
-  } catch (error) {
-    console.error("Error fetching groups:", error);
-    res.status(500).json({ message: "Error fetching groups" });
   }
 };
 
@@ -432,7 +432,6 @@ router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
 router.post("/join-request", authenticateToken, joinRequest);
-router.get("/find-all-groups", authenticateToken, findAllGroups);
 // router.get("accept-request", authenticateToken, acceptRequest);
 // router.get("refuse-request", authenticateToken, refuseRequest);
 
