@@ -415,7 +415,7 @@ const deleteGroup = async (req, res) => {
 const joinRequest = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
-    const groupId = req.body.groupId;
+    const groupId = new ObjectId(req.body.groupId);
 
     // Gold tier direct join
     if (user.tier === "GOLD" || user.tier === "PLATINUM") {
