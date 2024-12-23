@@ -22,7 +22,8 @@ app.use(express.json());
 // Middleware for CORS
 app.use(
   cors({
-    origin: "*",
+    origin: "https://two-school-front.onrender.com/",
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -189,31 +190,37 @@ const registerUser = async (req, res) => {
 
 // User Login
 const loginUser = async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ username });
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-  if (user.loginAttempts >= 5) {
-    return res.status(403).json({
-      message:
-        "Account locked due to too many failed login attempts. Contact support.",
-    });
-  }
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      user.loginAttempts += 1;
+      await user.save();
+      return res.status(401).json({ message: "Invalid password" });
+    }
 
-  const passwordMatch = await bcrypt.compare(password, user.password);
-  if (!passwordMatch) {
-    user.loginAttempts += 1;
+    user.loginAttempts = 0;
     await user.save();
-    console.log(`Login attempt failed: ${user.loginAttempts} times`);
-    return res.status(401).json({ message: "Invalid password" });
+
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+
+    res.status(200).json({ message: "Login successful", token });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Internal server error during login" });
   }
-
-  user.loginAttempts = 0;
-  await user.save();
-
-  const token = generateToken(user._id);
-  res.status(200).json({ message: "Login successful", token });
 };
 
 // rateLimit Middleware
