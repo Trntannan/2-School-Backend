@@ -415,7 +415,18 @@ const deleteGroup = async (req, res) => {
 const joinRequest = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
+
+    // Validate groupId before conversion
+    if (!req.body.groupId || !ObjectId.isValid(req.body.groupId)) {
+      return res.status(400).json({ message: "Invalid group ID format" });
+    }
+
     const groupId = new ObjectId(req.body.groupId);
+
+    const groupExists = await User.findOne({ "groups._id": groupId });
+    if (!groupExists) {
+      return res.status(404).json({ message: "Group not found" });
+    }
 
     // Gold tier direct join
     if (user.tier === "GOLD" || user.tier === "PLATINUM") {
