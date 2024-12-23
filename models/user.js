@@ -5,6 +5,11 @@ const userSchema = new mongoose.Schema(
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    tier: {
+      type: String,
+      enum: ["BRONZE", "SILVER", "GOLD", "PLATINUM"],
+      default: "BRONZE",
+    },
     groups: [
       {
         name: {
@@ -21,6 +26,11 @@ const userSchema = new mongoose.Schema(
               type: String,
               required: true,
             },
+            tier: {
+              type: String,
+              enum: ["BRONZE", "SILVER", "GOLD", "PLATINUM"],
+              default: "BRONZE",
+            },
           },
         ],
         requests: [
@@ -29,14 +39,16 @@ const userSchema = new mongoose.Schema(
               type: String,
               required: true,
             },
+            status: {
+              type: String,
+              enum: ["PENDING", "ACCEPTED", "DENIED"],
+              default: "PENDING",
+            },
+            requestDate: { type: Date, default: Date.now },
           },
         ],
         routes: [
           {
-            routeId: {
-              type: mongoose.Schema.Types.ObjectId,
-              auto: true,
-            },
             start: {
               latitude: {
                 type: String,
@@ -65,6 +77,10 @@ const userSchema = new mongoose.Schema(
             ],
           },
         ],
+        owner: {
+          type: String,
+          required: true,
+        },
       },
     ],
     profile: {
@@ -77,6 +93,8 @@ const userSchema = new mongoose.Schema(
     qrCode: {
       data: Buffer,
       contentType: String,
+      lastVerified: Date,
+      verifiedBy: String,
     },
   },
   {

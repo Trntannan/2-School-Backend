@@ -105,6 +105,27 @@ const upload = multer({
   },
 });
 
+// Check Tier permissions
+const checkTierPermissions = (requiredTier) => {
+  return async (req, res, next) => {
+    const user = await User.findById(req.userId);
+    const tierLevels = {
+      BRONZE: 0,
+      SILVER: 1,
+      GOLD: 2,
+      PLATINUM: 3,
+    };
+
+    if (tierLevels[user.tier] >= tierLevels[requiredTier]) {
+      next();
+    } else {
+      res.status(403).json({
+        message: `This action requires ${requiredTier} tier or higher`,
+      });
+    }
+  };
+};
+
 // User Registration
 const registerUser = async (req, res) => {
   const { username, email, password: hashedPassword } = req.body;
@@ -386,61 +407,47 @@ const deleteGroup = async (req, res) => {
 // make request, find group in 'users' collection by groupId, add userId to requests array in group
 const joinRequest = async (req, res) => {
   try {
-    const userId = req.userId;
+    const user = await User.findById(req.userId);
     const groupId = req.body.groupId;
 
-    const user = await User.findOne({
-      groups: { _id: groupId },
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: "Group not found" });
+    // Gold tier direct join
+    if (user.tier === "GOLD" || user.tier === "PLATINUM") {
+      const result = await User.updateOne(
+        { "groups._id": groupId },
+        { $push: { "groups.$.members": { userId: user._id, tier: user.tier } } }
+      );
+      return res.status(200).json({ message: "Joined group successfully" });
     }
 
-    const result = await User.updateOne(
-      {
-        groups: { _id: groupId },
-        "groups.requests.userId": { $ne: userId },
-      },
-      {
-        $push: { "groups.$.requests": { userId } },
-      }
-    );
-
-    if (result.modifiedCount === 0) {
-      return res
-        .status(400)
-        .json({ message: "Request already sent or group not found" });
-    }
+    user.requests.push({ groupId });
+    await user.save();
 
     res.status(200).json({ message: "Join request sent successfully" });
   } catch (error) {
-    console.error("Error sending join request:", error);
-    res.status(500).json({ message: "Error sending join request" });
+    console.error("Error processing join request:", error);
+    res.status(500).json({ message: "Error processing request" });
   }
 };
 
-// const saveQrCode = async (req, res) => {
-//   const { qrCodeData } = req.body;
-//   const userId = req.userId;
+// update qrCode with qrData
+const updateQr = async (req, res) => {
+  try {
+    const { qrData } = req.body;
+    const userId = req.userId;
 
-//   try {
-//     const user = await User.findById(userId);
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    user.qrCode = qrData;
+    await user.save();
 
-//     user.qrCode = qrCodeData;
-//     await user.save();
-
-//     res.status(200).json({ message: "QR code saved successfully" });
-//   } catch (error) {
-//     console.error("Error saving QR code:", error);
-//     res.status(500).json({ message: "Error saving QR code" });
-//   }
-// };
-
-// router.post("/save-qr-code", authenticateToken, saveQrCode);
+    res.status(200).json({ message: "QR code updated successfully" });
+  } catch (error) {
+    console.error("Error updating QR code:", error);
+    res.status(500).json({ message: "Error updating QR code" });
+  }
+};
 
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
@@ -464,6 +471,7 @@ router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
 router.post("/join-request", authenticateToken, joinRequest);
+router.post("/update-qr", authenticateToken, updateQr);
 // router.get("accept-request", authenticateToken, acceptRequest);
 // router.get("refuse-request", authenticateToken, refuseRequest);
 
