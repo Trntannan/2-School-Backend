@@ -22,7 +22,7 @@ app.use(express.json());
 // Middleware for CORS
 app.use(
   cors({
-    origin: "https://two-school-front.onrender.com/",
+    origin: ["https://two-school-front.onrender.com/", "http://localhost:3000"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
