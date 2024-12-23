@@ -67,8 +67,10 @@ const initializeCollections = async () => {
 };
 
 // Token Generation
-const generateToken = (userId) => {
-  return jwt.sign({ id: userId.toString() }, jwtSecret, { expiresIn: "1h" });
+const generateToken = (userId, username) => {
+  return jwt.sign({ id: userId, username }, jwtSecret, {
+    expiresIn: "1h",
+  });
 };
 
 // Token Authentication Middleware
@@ -82,6 +84,7 @@ const authenticateToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, jwtSecret);
     req.userId = decoded.id;
+    req.username = decoded.username;
     next();
   } catch (err) {
     res.status(403).json({ message: "Invalid token" });
@@ -93,7 +96,7 @@ const storage = multer.memoryStorage();
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (file, cb) => {
     if (file.mimetype.startsWith("image")) {
       cb(null, true);
     } else {
@@ -112,26 +115,40 @@ const registerUser = async (req, res) => {
   }
 
   try {
-    // Check both email and username simultaneously
     const [existingEmail, existingUsername] = await Promise.all([
       User.findOne({ email }),
       User.findOne({ username }),
     ]);
 
-    if (existingEmail && existingUsername) {
-      return res
-        .status(400)
-        .json({ message: "Both email and username are already taken" });
-    }
-
     if (existingEmail) {
-      return res
-        .status(400)
-        .json({ message: "An account using that email already exists" });
+      return res.status(400).json({
+        field: "email",
+        message: "Email already exists.",
+        error: true,
+      });
     }
 
     if (existingUsername) {
-      return res.status(400).json({ message: "Username already exists" });
+      let suggestedUsername = username;
+      let counter = 1;
+      let isAvailable = false;
+
+      while (!isAvailable) {
+        const suggestion = `${username}${counter}`;
+        const exists = await User.findOne({ username: suggestion });
+        if (!exists) {
+          suggestedUsername = suggestion;
+          isAvailable = true;
+        }
+        counter++;
+      }
+
+      return res.status(400).json({
+        field: "username",
+        message: "Username already exists.",
+        suggestion: suggestedUsername,
+        error: true,
+      });
     }
 
     const newUser = new User({
@@ -148,35 +165,6 @@ const registerUser = async (req, res) => {
     res.status(500).json({ message: "Error registering user" });
   }
 };
-
-// const registerUser = async (req, res) => {
-//   const { username, email, password: hashedPassword } = req.body;
-//   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-//   if (!emailRegex.test(email)) {
-//     return res.status(400).json({ message: "Invalid email format" });
-//   }
-
-//   try {
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser) {
-//       return res.status(400).json({ message: "User already exists" });
-//     }
-
-//     const newUser = new User({
-//       username,
-//       email,
-//       password: hashedPassword,
-//     });
-//     await newUser.save();
-
-//     const token = generateToken(newUser._id);
-//     res.status(201).json({ message: "User registered successfully", token });
-//   } catch (err) {
-//     console.error("Error registering user:", err);
-//     res.status(500).json({ message: "Error registering user" });
-//   }
-// };
 
 // User Login
 const loginUser = async (req, res) => {
