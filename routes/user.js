@@ -112,9 +112,26 @@ const registerUser = async (req, res) => {
   }
 
   try {
-    const existingUser = await User.findOne({ username, email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+    // Check both email and username simultaneously
+    const [existingEmail, existingUsername] = await Promise.all([
+      User.findOne({ email }),
+      User.findOne({ username }),
+    ]);
+
+    if (existingEmail && existingUsername) {
+      return res
+        .status(400)
+        .json({ message: "Both email and username are already taken" });
+    }
+
+    if (existingEmail) {
+      return res
+        .status(400)
+        .json({ message: "An account using that email already exists" });
+    }
+
+    if (existingUsername) {
+      return res.status(400).json({ message: "Username already exists" });
     }
 
     const newUser = new User({
@@ -126,11 +143,40 @@ const registerUser = async (req, res) => {
 
     const token = generateToken(newUser._id);
     res.status(201).json({ message: "User registered successfully", token });
-  } catch (err) {
-    console.error("Error registering user:", err);
+  } catch (error) {
+    console.error("Error registering user:", error);
     res.status(500).json({ message: "Error registering user" });
   }
 };
+
+// const registerUser = async (req, res) => {
+//   const { username, email, password: hashedPassword } = req.body;
+//   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+//   if (!emailRegex.test(email)) {
+//     return res.status(400).json({ message: "Invalid email format" });
+//   }
+
+//   try {
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       return res.status(400).json({ message: "User already exists" });
+//     }
+
+//     const newUser = new User({
+//       username,
+//       email,
+//       password: hashedPassword,
+//     });
+//     await newUser.save();
+
+//     const token = generateToken(newUser._id);
+//     res.status(201).json({ message: "User registered successfully", token });
+//   } catch (err) {
+//     console.error("Error registering user:", err);
+//     res.status(500).json({ message: "Error registering user" });
+//   }
+// };
 
 // User Login
 const loginUser = async (req, res) => {
