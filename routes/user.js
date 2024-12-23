@@ -321,36 +321,24 @@ const getGroup = async (req, res) => {
 
 // get every group in the 'users' collection
 const getAllGroups = async (req, res) => {
-  // Try to execute the code in the block below
   try {
-    // Get the user id from the request
     const userId = req.userId;
-    // Find all users in the database and return their values as plain JS objects
     const users = await User.find().lean();
-    // Create an empty array to store the groups
     const allGroups = [];
 
-    // Loop through all the users and their groups
     for (const user of users) {
-      // If the user is the current user, skip them
       if (user._id.toString() === userId) {
         continue;
       }
-      // If the user has groups, add them to the allGroups array
       if (user.groups.length > 0) {
         allGroups.push(...user.groups);
       }
     }
-
-    // If there are no groups, return an error message
     if (allGroups.length === 0) {
       return res.status(404).json({ message: "No groups found." });
     }
-
-    // Otherwise, return the groups as the response
     res.status(200).json(allGroups);
   } catch (error) {
-    // If there is an error, log it to the console and return an error message
     console.error("Error fetching user groups:", error);
     res.status(500).json({ message: "Error fetching groups" });
   }
@@ -383,30 +371,41 @@ const deleteGroup = async (req, res) => {
 // make request, find group in 'users' collection by groupId, add userId to requests array in group
 const joinRequest = async (req, res) => {
   try {
+    // get the userId from the request
+    const userId = req.userId;
+    // get the groupId from the request body
     const groupId = req.body.groupId;
-    const users = await User.find();
-
-    let targetUser = users.find((user) =>
-      user.groups.some((group) => group._id.toString() === groupId)
+    // find the group in the 'users' collection by groupId
+    const group = await User.find((user) =>
+      user.groups.some((g) => g._id.toString() === groupId)
     );
-
-    if (!targetUser) {
+    // if the group is not found, return an error message
+    if (!group) {
       return res.status(404).json({ message: "Group not found" });
+    } else {
+      // add the userId to the requests array in the group
+      group.requests.push(userId);
+      // save the group
+      await group.save();
+      // return a success message
+      res.status(200).json({ message: "Request sent successfully" });
     }
-
-    const targetGroup = targetUser.groups.find(
-      (group) => group._id.toString() === groupId
-    );
-
-    targetGroup.requests = targetGroup.requests || [];
-    targetGroup.requests.push(req.userId);
-
-    await targetUser.save();
-
-    res.status(200).json({ message: "Request sent successfully" });
   } catch (error) {
-    console.error("Error sending request:", error);
-    res.status(500).json({ message: "Error sending request" });
+    // if there is an error, log it to the console and return an error message
+    console.error("Error sending join request:", error);
+    res.status(500).json({ message: "Error sending join request" });
+  }
+};
+
+// find all groups in users collection
+const findAllGroups = async (req, res) => {
+  try {
+    const users = await User.find();
+    const groups = users.flatMap((user) => user.groups);
+    res.status(200).json(groups);
+  } catch (error) {
+    console.error("Error fetching groups:", error);
+    res.status(500).json({ message: "Error fetching groups" });
   }
 };
 
@@ -454,6 +453,7 @@ router.delete("/delete-group", authenticateToken, deleteGroup);
 router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
 router.post("/join-request", authenticateToken, joinRequest);
+router.get("/find-all-groups", authenticateToken, findAllGroups);
 // router.get("accept-request", authenticateToken, acceptRequest);
 // router.get("refuse-request", authenticateToken, refuseRequest);
 
