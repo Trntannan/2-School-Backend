@@ -37,6 +37,10 @@ const userSchema = new mongoose.Schema(
         ],
         routes: [
           {
+            routeId: {
+              type: mongoose.Schema.Types.ObjectId,
+              auto: true,
+            },
             start: {
               latitude: {
                 type: String,
