@@ -390,7 +390,7 @@ const joinRequest = async (req, res) => {
     const groupId = req.body.groupId;
 
     const user = await User.findOne({
-      "groups.groupId": groupId,
+      groups: { _id: groupId },
     });
 
     if (!user) {
@@ -399,11 +399,11 @@ const joinRequest = async (req, res) => {
 
     const result = await User.updateOne(
       {
-        "groups.groupId": groupId,
-        "groups.requests": { $ne: userId },
+        groups: { _id: groupId },
+        "groups.requests.userId": { $ne: userId },
       },
       {
-        $push: { "groups.$.requests": userId },
+        $push: { "groups.$.requests": { userId } },
       }
     );
 

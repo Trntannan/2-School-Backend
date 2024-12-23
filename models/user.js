@@ -7,10 +7,6 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     groups: [
       {
-        groupId: {
-          type: mongoose.Schema.Types.ObjectId,
-          auto: true,
-        },
         name: {
           type: String,
           required: true,
