@@ -384,32 +384,26 @@ const deleteGroup = async (req, res) => {
 const joinRequest = async (req, res) => {
   try {
     const groupId = req.body.groupId;
-    let targetGroup = null;
-    let targetUser = null;
+    const users = await User.find();
 
-    const users = await User.find().lean();
+    let targetUser = users.find((user) =>
+      user.groups.some((group) => group._id.toString() === groupId)
+    );
 
-    for (const user of users) {
-      const group = user.groups.find(
-        (group) => group._id.toString() === groupId
-      );
-
-      if (group) {
-        targetGroup = group;
-        targetUser = user;
-        break;
-      }
+    if (!targetUser) {
+      return res.status(404).json({ message: "Group not found" });
     }
 
-    if (targetGroup) {
-      targetGroup.requests.push(req.userId);
-      await targetUser.save();
-      res.status(200).json({ message: "Request sent successfully" });
-    } else {
-      res.status(404).json({ message: "Group not found" });
-    }
+    const targetGroup = targetUser.groups.find(
+      (group) => group._id.toString() === groupId
+    );
 
-    console.log("targetGroup: ", targetGroup);
+    targetGroup.requests = targetGroup.requests || [];
+    targetGroup.requests.push(req.userId);
+
+    await targetUser.save();
+
+    res.status(200).json({ message: "Request sent successfully" });
   } catch (error) {
     console.error("Error sending request:", error);
     res.status(500).json({ message: "Error sending request" });
