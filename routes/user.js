@@ -386,10 +386,9 @@ const deleteGroup = async (req, res) => {
 // make request, find group in 'users' collection by groupId, add userId to requests array in group
 const joinRequest = async (req, res) => {
   try {
-    // Extract user and group IDs from request
-    const { userId, groupId } = req;
+    const userId = req.userId;
+    const groupId = req.body.groupId;
 
-    // Find the user who owns the group directly
     const user = await User.findOne({
       "groups.groupId": groupId,
     });
@@ -398,7 +397,6 @@ const joinRequest = async (req, res) => {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    // Find and update the specific group
     const result = await User.updateOne(
       {
         "groups.groupId": groupId,
