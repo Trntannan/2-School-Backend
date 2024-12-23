@@ -106,25 +106,25 @@ const upload = multer({
 });
 
 // Check Tier permissions
-const checkTierPermissions = (requiredTier) => {
-  return async (req, res, next) => {
-    const user = await User.findById(req.userId);
-    const tierLevels = {
-      BRONZE: 0,
-      SILVER: 1,
-      GOLD: 2,
-      PLATINUM: 3,
-    };
+// const checkTierPermissions = (requiredTier) => {
+//   return async (req, res, next) => {
+//     const user = await User.findById(req.userId);
+//     const tierLevels = {
+//       BRONZE: 0,
+//       SILVER: 1,
+//       GOLD: 2,
+//       PLATINUM: 3,
+//     };
 
-    if (tierLevels[user.tier] >= tierLevels[requiredTier]) {
-      next();
-    } else {
-      res.status(403).json({
-        message: `This action requires ${requiredTier} tier or higher`,
-      });
-    }
-  };
-};
+//     if (tierLevels[user.tier] >= tierLevels[requiredTier]) {
+//       next();
+//     } else {
+//       res.status(403).json({
+//         message: `This action requires ${requiredTier} tier or higher`,
+//       });
+//     }
+//   };
+// };
 
 // User Registration
 const registerUser = async (req, res) => {
