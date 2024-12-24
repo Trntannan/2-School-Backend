@@ -415,7 +415,7 @@ const deleteGroup = async (req, res) => {
 // make request, find group in 'users' collection by groupId, add userId to requests array in group
 const joinRequest = async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
+    const userId = req.userId;
     if (!req.body.groupId || !ObjectId.isValid(req.body.groupId)) {
       return res.status(400).json({ message: "Invalid group ID format" });
     }
@@ -426,7 +426,7 @@ const joinRequest = async (req, res) => {
     if (groupExists) {
       const result = await User.updateOne(
         { "groups._id": groupId },
-        { $push: { "groups.$.requests": user._id } }
+        { $push: { "groups.$.requests": userId } }
       );
       return res
         .status(200)
