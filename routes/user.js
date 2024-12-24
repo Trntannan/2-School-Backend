@@ -466,6 +466,21 @@ const updateQr = async (req, res) => {
   }
 };
 
+// get all requests arrays from users groups
+const getRequests = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const requests = user.groups.flatMap((group) => group.requests);
+    res.status(200).json(requests);
+  } catch (error) {
+    console.error("Error fetching requests:", error);
+    res.status(500).json({ message: "Error fetching requests" });
+  }
+};
+
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
 router.post(
@@ -489,6 +504,7 @@ router.delete("/delete-account", authenticateToken, deleteAccount);
 router.get("/initialize-server", initializeCollections);
 router.post("/join-request", authenticateToken, joinRequest);
 router.post("/update-qr", authenticateToken, updateQr);
+router.get("/get-requests", authenticateToken, getRequests);
 // router.get("accept-request", authenticateToken, acceptRequest);
 // router.get("refuse-request", authenticateToken, refuseRequest);
 
