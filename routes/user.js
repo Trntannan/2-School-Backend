@@ -508,7 +508,7 @@ const acceptRequest = async (req, res) => {
 
     const groupObjectId = new ObjectId(groupId);
 
-    if (userTier === "GOLD" || userTier === "PLATINUM") {
+    if (userTier === "GOLD" || userTier === "DIAMOND") {
       const group = await User.findOneAndUpdate(
         { "groups._id": groupId },
         {
