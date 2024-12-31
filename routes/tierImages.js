@@ -28,18 +28,21 @@ router.post("/upload", upload.single("image"), async (req, res) => {
   }
 });
 
-// Get tier image
-router.get("/:tier", async (req, res) => {
+// Get tier image by tier level
+router.post("/tierImages", async (req, res) => {
   try {
-    const tierImage = await TierImage.findOne({ tier: req.params.tier });
+    const { tier } = req.body;
+    const tierImage = await TierImage.findOne({ tier });
+
     if (!tierImage) {
       return res.status(404).json({ message: "Tier image not found" });
     }
 
-    const imageData = `data:${
-      tierImage.image.contentType
-    };base64,${tierImage.image.data.toString("base64")}`;
-    res.json({ imageUrl: imageData });
+    res.json({
+      imageUrl: `data:${
+        tierImage.image.contentType
+      };base64,${tierImage.image.data.toString("base64")}`,
+    });
   } catch (error) {
     res.status(500).json({ message: "Error fetching tier image" });
   }
