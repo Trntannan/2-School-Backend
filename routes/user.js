@@ -188,13 +188,7 @@ const loginUser = async (req, res) => {
     user.loginAttempts = 0;
     await user.save();
 
-    const token = jwt.sign(
-      { id: user._id, username: user.username, tier: user.tier },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1h",
-      }
-    );
+    const token = generateToken(user._id, user.username, user.tier);
 
     res.status(200).json({ message: "Login successful", token });
   } catch (error) {
@@ -529,6 +523,39 @@ const acceptRequest = async (req, res) => {
   }
 };
 
+const checkUsername = async (req, res) => {
+  try {
+    const username = req.params.username;
+    const existingUser = await User.findOne({ username });
+
+    if (existingUser) {
+      let suggestedUsername = username;
+      let counter = 1;
+      let isAvailable = false;
+
+      while (!isAvailable) {
+        const suggestion = `${username}${counter}`;
+        const exists = await User.findOne({ username: suggestion });
+        if (!exists) {
+          suggestedUsername = suggestion;
+          isAvailable = true;
+        }
+        counter++;
+      }
+
+      return res.status(400).json({
+        field: "username",
+        message: "Username already exists.",
+        suggestion: suggestedUsername,
+      });
+    }
+
+    res.status(200).json({ message: "Username is available" });
+  } catch (error) {
+    res.status(500).json({ message: "Error checking username" });
+  }
+};
+
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
 router.post(
@@ -554,6 +581,7 @@ router.post("/join-request", authenticateToken, joinRequest);
 router.post("/update-qr", authenticateToken, updateQr);
 router.get("/get-requests", authenticateToken, getRequests);
 router.post("/accept-request", authenticateToken, acceptRequest);
+router.get("/check-username/:username", checkUsername);
 // router.post("/refuse-request", authenticateToken, refuseRequest);
 
 module.exports = { router, connectToMongoDB, User };
