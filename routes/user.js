@@ -5,6 +5,7 @@ const multer = require("multer");
 const sharp = require("sharp");
 const mongoose = require("mongoose");
 const User = require("../models/user");
+const TierImage = require("../models/tierImage");
 const { ObjectId } = require("mongodb");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
