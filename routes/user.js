@@ -507,21 +507,25 @@ const getRequests = async (req, res) => {
 //Accept request
 const acceptRequest = async (req, res) => {
   try {
-    const { requestId, groupId } = req.body;
+    const { userId, groupId } = req.body;
+
+    if (!groupId || !ObjectId.isValid(groupId)) {
+      return res.status(400).json({ message: "Invalid group ID format" });
+    }
+
+    const groupObjectId = new ObjectId(groupId);
+
     const user = await User.findOneAndUpdate(
+      { "groups._id": groupObjectId },
       {
-        "groups._id": groupId,
-        "groups.requests._id": requestId,
-      },
-      {
-        $pull: { "groups.$.requests": { _id: requestId } },
-        $push: { "groups.$.members": { userId: requestId } },
+        $pull: { "groups.$.requests": { userId: userId } },
+        $push: { "groups.$.members": { userId: userId } },
       },
       { new: true }
     );
 
     if (!user) {
-      return res.status(404).json({ message: "Request not found" });
+      return res.status(404).json({ message: "Group not found" });
     }
 
     res.status(200).json({ message: "Request accepted successfully" });
