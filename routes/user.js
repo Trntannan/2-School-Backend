@@ -484,6 +484,7 @@ const getRequests = async (req, res) => {
           const requestingUser = await User.findById(request.userId);
           return {
             requestId: request._id,
+            userId: request.userId,
             groupId: group._id,
             groupName: group.name,
             user: {
