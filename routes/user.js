@@ -590,7 +590,7 @@ router.post("/join-request", authenticateToken, joinRequest);
 router.post("/update-qr", authenticateToken, updateQr);
 router.get("/get-requests", authenticateToken, getRequests);
 router.post("/accept-request", authenticateToken, acceptRequest);
-router.post("/refuse-request", authenticateToken, refuseRequest);
+// router.post("/refuse-request", authenticateToken, refuseRequest);
 
 module.exports = { router, connectToMongoDB, User };
 
