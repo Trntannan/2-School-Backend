@@ -107,27 +107,6 @@ const upload = multer({
   },
 });
 
-// Check Tier permissions
-// const checkTierPermissions = (requiredTier) => {
-//   return async (req, res, next) => {
-//     const user = await User.findById(req.userId);
-//     const tierLevels = {
-//       BRONZE: 0,
-//       SILVER: 1,
-//       GOLD: 2,
-//       PLATINUM: 3,
-//     };
-
-//     if (tierLevels[user.tier] >= tierLevels[requiredTier]) {
-//       next();
-//     } else {
-//       res.status(403).json({
-//         message: `This action requires ${requiredTier} tier or higher`,
-//       });
-//     }
-//   };
-// };
-
 // User Registration
 const registerUser = async (req, res) => {
   const { username, email, password: hashedPassword } = req.body;
@@ -349,6 +328,7 @@ const newGroup = async (req, res) => {
   }
 };
 
+// get user groups
 const getGroup = async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate("groups");
@@ -514,7 +494,13 @@ const getRequests = async (req, res) => {
 //Accept request
 const acceptRequest = async (req, res) => {
   try {
-    const { userId, groupId } = req.body;
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const groupId = req.body;
+    const username = req.body.username;
+    const userTier = req.tier;
 
     if (!groupId || !ObjectId.isValid(groupId)) {
       return res.status(400).json({ message: "Invalid group ID format" });
@@ -522,55 +508,41 @@ const acceptRequest = async (req, res) => {
 
     const groupObjectId = new ObjectId(groupId);
 
-    const user = await User.findOneAndUpdate(
-      { "groups._id": groupObjectId },
-      {
-        $pull: { "groups.$.requests": { userId: userId } },
-        $push: { "groups.$.members": { userId: userId } },
-      },
-      { new: true }
-    );
+    if (userTier === "GOLD" || userTier === "PLATINUM") {
+      const group = await User.findOneAndUpdate(
+        { "groups._id": groupId },
+        {
+          $pull: { "groups.$.requests": { username: username } },
+          $push: {
+            "groups.$.members": { username: username, userId: req.userId },
+          },
+        },
+        { new: true }
+      );
 
-    if (!user) {
-      return res.status(404).json({ message: "Group not found" });
+      if (!group) {
+        return res.status(404).json({ message: "Group not found" });
+      }
+    } else if (userTier === "BRONZE" || userTier === "SILVER") {
+      const group = await User.findOneAndUpdate(
+        { "groups._id": groupObjectId, "groups.requests.username": username },
+        {
+          $set: { "groups.$.requests.$.status": "AWAITING APPROVAL" },
+        },
+        { new: true }
+      );
+
+      if (!group) {
+        return res.status(404).json({ message: "Group not found" });
+      }
     }
 
-    res.status(200).json({ message: "Request accepted successfully" });
+    res.status(200).json({ message: "Request processed successfully" });
   } catch (error) {
-    console.error("Error accepting request:", error);
+    console.error("Error processing request:", error);
     res.status(500).json({ message: "Error processing request" });
   }
 };
-
-//Refuse request
-// const refuseRequest = async (req, res) => {
-//   try {
-//     const { userId, groupId } = req.body;
-
-//     if (!groupId || !ObjectId.isValid(groupId)) {
-//       return res.status(400).json({ message: "Invalid group ID format" });
-//     }
-
-//     const groupObjectId = new ObjectId(groupId);
-
-//     const user = await User.findOneAndUpdate(
-//       { "groups._id": groupObjectId },
-//       {
-//         $pull: { "groups.$.requests": { userId: userId } },
-//       },
-//       { new: true }
-//     );
-
-//     if (!user) {
-//       return res.status(404).json({ message: "Group not found" });
-//     }
-
-//     res.status(200).json({ message: "Request refused successfully" });
-//   } catch (error) {
-//     console.error("Error accepting request:", error);
-//     res.status(500).json({ message: "Error processing request" });
-//   }
-// };
 
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
@@ -600,12 +572,3 @@ router.post("/accept-request", authenticateToken, acceptRequest);
 // router.post("/refuse-request", authenticateToken, refuseRequest);
 
 module.exports = { router, connectToMongoDB, User };
-
-// Gold tier direct join
-// if (user.tier === "GOLD" || user.tier === "PLATINUM") {
-//   const result = await User.updateOne(
-//     { "groups._id": groupId },
-//     { $push: { "groups.$.members": { userId: user._id, tier: user.tier } } }
-//   );
-//   return res.status(200).json({ message: "Joined group successfully" });
-// }

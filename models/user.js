@@ -42,6 +42,11 @@ const userSchema = new mongoose.Schema(
               type: String,
               required: true,
             },
+            status: {
+              type: String,
+              enum: ["PENDING", "AWAITING APPROVAL"],
+              default: "PENDING",
+            },
           },
         ],
         routes: [
