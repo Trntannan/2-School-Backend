@@ -466,18 +466,92 @@ const updateQr = async (req, res) => {
   }
 };
 
-// get all requests arrays from users groups
+// get all requests
 const getRequests = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    const requests = user.groups.flatMap((group) => group.requests);
-    res.status(200).json(requests);
+
+    const groupsWithRequests = user.groups.filter(
+      (group) => group.requests.length > 0
+    );
+
+    const requestsWithUserDetails = await Promise.all(
+      groupsWithRequests.flatMap((group) =>
+        group.requests.map(async (request) => {
+          const requestingUser = await User.findById(request.userId);
+          return {
+            requestId: request._id,
+            groupId: group._id,
+            groupName: group.name,
+            user: {
+              username: requestingUser.username,
+              profile: requestingUser.profile,
+            },
+          };
+        })
+      )
+    );
+
+    res.status(200).json(requestsWithUserDetails);
   } catch (error) {
     console.error("Error fetching requests:", error);
     res.status(500).json({ message: "Error fetching requests" });
+  }
+};
+
+//Accept request
+const acceptRequest = async (req, res) => {
+  try {
+    const { requestId, groupId } = req.body;
+    const user = await User.findOneAndUpdate(
+      {
+        "groups._id": groupId,
+        "groups.requests._id": requestId,
+      },
+      {
+        $pull: { "groups.$.requests": { _id: requestId } },
+        $push: { "groups.$.members": { userId: requestId } },
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    res.status(200).json({ message: "Request accepted successfully" });
+  } catch (error) {
+    console.error("Error accepting request:", error);
+    res.status(500).json({ message: "Error processing request" });
+  }
+};
+
+//Refuse request
+const refuseRequest = async (req, res) => {
+  try {
+    const { requestId, groupId } = req.body;
+    const user = await User.findOneAndUpdate(
+      {
+        "groups._id": groupId,
+        "groups.requests._id": requestId,
+      },
+      {
+        $pull: { "groups.$.requests": { _id: requestId } },
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    res.status(200).json({ message: "Request refused successfully" });
+  } catch (error) {
+    console.error("Error refusing request:", error);
+    res.status(500).json({ message: "Error processing request" });
   }
 };
 
@@ -505,8 +579,8 @@ router.get("/initialize-server", initializeCollections);
 router.post("/join-request", authenticateToken, joinRequest);
 router.post("/update-qr", authenticateToken, updateQr);
 router.get("/get-requests", authenticateToken, getRequests);
-// router.get("accept-request", authenticateToken, acceptRequest);
-// router.get("refuse-request", authenticateToken, refuseRequest);
+router.post("accept-request", authenticateToken, acceptRequest);
+router.post("refuse-request", authenticateToken, refuseRequest);
 
 module.exports = { router, connectToMongoDB, User };
 
