@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     tier: {
       type: String,
-      enum: ["BRONZE", "SILVER", "GOLD", "PLATINUM"],
+      enum: ["BRONZE", "SILVER", "GOLD", "DIAMOND"],
       default: "BRONZE",
     },
     groups: [

@@ -188,7 +188,13 @@ const loginUser = async (req, res) => {
     user.loginAttempts = 0;
     await user.save();
 
-    const token = generateToken(user._id, user.username, user.tier);
+    const token = jwt.sign(
+      { id: user._id, username: user.username, tier: user.tier },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
 
     res.status(200).json({ message: "Login successful", token });
   } catch (error) {
@@ -407,7 +413,7 @@ const joinRequest = async (req, res) => {
           $push: {
             "groups.$.requests": {
               username: user.username,
-              userId: req.userId,
+              userId: user._id,
             },
           },
         }
@@ -486,42 +492,42 @@ const getRequests = async (req, res) => {
 };
 
 //Accept request
-// const acceptRequest = async (req, res) => {
-//   try {
-//     const user = await User.findById(req.userId);
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-//     const groupId = req.body;
-//     const username = req.body.username;
+const acceptRequest = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const groupId = req.body;
+    const username = req.body.username;
 
-//     if (!groupId || !ObjectId.isValid(groupId)) {
-//       return res.status(400).json({ message: "Invalid group ID format" });
-//     }
+    if (!groupId || !ObjectId.isValid(groupId)) {
+      return res.status(400).json({ message: "Invalid group ID format" });
+    }
 
-//     const groupObjectId = new ObjectId(groupId);
+    const groupObjectId = new ObjectId(groupId);
 
-//     const group = await User.findOneAndUpdate(
-//       { "groups._id": groupId },
-//       {
-//         $pull: { "groups.$.requests": { username: username } },
-//         $push: {
-//           "groups.$.members": { username: username, userId: req.userId },
-//         },
-//       },
-//       { new: true }
-//     );
+    const group = await User.findOneAndUpdate(
+      { "groups._id": groupId },
+      {
+        $pull: { "groups.$.requests": { username: username } },
+        $push: {
+          "groups.$.members": { username: username, userId: req.userId },
+        },
+      },
+      { new: true }
+    );
 
-//     if (!group) {
-//       return res.status(404).json({ message: "Group not found" });
-//     }
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
 
-//     res.status(200).json({ message: "Request processed successfully" });
-//   } catch (error) {
-//     console.error("Error processing request:", error);
-//     res.status(500).json({ message: "Error processing request" });
-//   }
-// };
+    res.status(200).json({ message: "Request processed successfully" });
+  } catch (error) {
+    console.error("Error processing request:", error);
+    res.status(500).json({ message: "Error processing request" });
+  }
+};
 
 // const checkUsername = async (req, res) => {
 //   try {
@@ -580,7 +586,7 @@ router.get("/initialize-server", initializeCollections);
 router.post("/join-request", authenticateToken, joinRequest);
 router.post("/update-qr", authenticateToken, updateQr);
 router.get("/get-requests", authenticateToken, getRequests);
-// router.post("/accept-request", authenticateToken, acceptRequest);
+router.post("/accept-request", authenticateToken, acceptRequest);
 // router.get("/check-username/:username", checkUsername);
 // router.post("/refuse-request", authenticateToken, refuseRequest);
 
