@@ -22,6 +22,10 @@ const userSchema = new mongoose.Schema(
         },
         members: [
           {
+            username: {
+              type: String,
+              required: true,
+            },
             userId: {
               type: String,
               required: true,
@@ -30,6 +34,10 @@ const userSchema = new mongoose.Schema(
         ],
         requests: [
           {
+            username: {
+              type: String,
+              required: true,
+            },
             userId: {
               type: String,
               required: true,
