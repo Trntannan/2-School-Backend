@@ -500,7 +500,6 @@ const acceptRequest = async (req, res) => {
     }
     const groupId = req.body;
     const username = req.body.username;
-    const userTier = req.tier;
 
     if (!groupId || !ObjectId.isValid(groupId)) {
       return res.status(400).json({ message: "Invalid group ID format" });
@@ -508,33 +507,19 @@ const acceptRequest = async (req, res) => {
 
     const groupObjectId = new ObjectId(groupId);
 
-    if (userTier === "GOLD" || userTier === "DIAMOND") {
-      const group = await User.findOneAndUpdate(
-        { "groups._id": groupId },
-        {
-          $pull: { "groups.$.requests": { username: username } },
-          $push: {
-            "groups.$.members": { username: username, userId: req.userId },
-          },
+    const group = await User.findOneAndUpdate(
+      { "groups._id": groupId },
+      {
+        $pull: { "groups.$.requests": { username: username } },
+        $push: {
+          "groups.$.members": { username: username, userId: req.userId },
         },
-        { new: true }
-      );
+      },
+      { new: true }
+    );
 
-      if (!group) {
-        return res.status(404).json({ message: "Group not found" });
-      }
-    } else if (userTier === "BRONZE" || userTier === "SILVER") {
-      const group = await User.findOneAndUpdate(
-        { "groups._id": groupObjectId, "groups.requests.username": username },
-        {
-          $set: { "groups.$.requests.$.status": "AWAITING APPROVAL" },
-        },
-        { new: true }
-      );
-
-      if (!group) {
-        return res.status(404).json({ message: "Group not found" });
-      }
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
     }
 
     res.status(200).json({ message: "Request processed successfully" });
