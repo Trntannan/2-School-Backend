@@ -536,34 +536,34 @@ const acceptRequest = async (req, res) => {
 };
 
 //Refuse request
-const refuseRequest = async (req, res) => {
-  try {
-    const { userId, groupId } = req.body;
+// const refuseRequest = async (req, res) => {
+//   try {
+//     const { userId, groupId } = req.body;
 
-    if (!groupId || !ObjectId.isValid(groupId)) {
-      return res.status(400).json({ message: "Invalid group ID format" });
-    }
+//     if (!groupId || !ObjectId.isValid(groupId)) {
+//       return res.status(400).json({ message: "Invalid group ID format" });
+//     }
 
-    const groupObjectId = new ObjectId(groupId);
+//     const groupObjectId = new ObjectId(groupId);
 
-    const user = await User.findOneAndUpdate(
-      { "groups._id": groupObjectId },
-      {
-        $pull: { "groups.$.requests": { userId: userId } },
-      },
-      { new: true }
-    );
+//     const user = await User.findOneAndUpdate(
+//       { "groups._id": groupObjectId },
+//       {
+//         $pull: { "groups.$.requests": { userId: userId } },
+//       },
+//       { new: true }
+//     );
 
-    if (!user) {
-      return res.status(404).json({ message: "Group not found" });
-    }
+//     if (!user) {
+//       return res.status(404).json({ message: "Group not found" });
+//     }
 
-    res.status(200).json({ message: "Request refused successfully" });
-  } catch (error) {
-    console.error("Error accepting request:", error);
-    res.status(500).json({ message: "Error processing request" });
-  }
-};
+//     res.status(200).json({ message: "Request refused successfully" });
+//   } catch (error) {
+//     console.error("Error accepting request:", error);
+//     res.status(500).json({ message: "Error processing request" });
+//   }
+// };
 
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
