@@ -429,7 +429,14 @@ const joinRequest = async (req, res) => {
     if (groupExists) {
       const result = await User.updateOne(
         { "groups._id": groupId },
-        { $push: { "groups.$.requests": { userId: req.userId } } }
+        {
+          $push: {
+            "groups.$.requests": {
+              username: user.username,
+              userId: req.userId,
+            },
+          },
+        }
       );
       return res
         .status(200)
