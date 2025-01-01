@@ -25,38 +25,33 @@ router.get("/all", async (req, res) => {
 });
 
 // Upload tier image with authentication
-router.post(
-  "/upload",
-  authenticateToken,
-  upload.single("image"),
-  async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "No image provided" });
-      }
-
-      const { tier } = req.body;
-      const imageBuffer = await sharp(req.file.buffer)
-        .resize(55, 47)
-        .png()
-        .toBuffer();
-
-      await TierImage.findOneAndUpdate(
-        { tier: tier.toUpperCase() },
-        {
-          image: {
-            data: imageBuffer,
-            contentType: "image/png",
-          },
-        },
-        { upsert: true }
-      );
-
-      res.json({ message: "Tier image uploaded successfully" });
-    } catch (error) {
-      res.status(500).json({ message: "Error uploading tier image" });
+router.post("/upload", upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image provided" });
     }
+
+    const { tier } = req.body;
+    const imageBuffer = await sharp(req.file.buffer)
+      .resize(55, 47)
+      .png()
+      .toBuffer();
+
+    await TierImage.findOneAndUpdate(
+      { tier: tier.toUpperCase() },
+      {
+        image: {
+          data: imageBuffer,
+          contentType: "image/png",
+        },
+      },
+      { upsert: true }
+    );
+
+    res.json({ message: "Tier image uploaded successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error uploading tier image" });
   }
-);
+});
 
 module.exports = router;

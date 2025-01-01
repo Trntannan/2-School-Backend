@@ -1,6 +1,5 @@
 const express = require("express");
 const { connectToMongoDB, router: userRouter } = require("./routes/user");
-const tierImagesRouter = require("./routes/tierImages");
 const cors = require("cors");
 
 require("dotenv").config();
@@ -17,7 +16,6 @@ connectToMongoDB()
   .then(() => {
     console.log("Connected to MongoDB");
     app.use("/api/user", userRouter);
-    app.use("/api/tierImages", tierImagesRouter);
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
