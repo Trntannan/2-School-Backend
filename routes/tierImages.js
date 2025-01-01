@@ -7,45 +7,56 @@ const TierImage = require("../models/tierImage");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Upload tier image
-router.post("/upload", upload.single("image"), async (req, res) => {
+// Get all tier images
+router.get("/all", async (req, res) => {
   try {
-    const { tier } = req.body;
-    const processedImage = await sharp(req.file.buffer).png().toBuffer();
+    const tierImages = await TierImage.find({});
+    const formattedImages = {};
 
-    const tierImage = new TierImage({
-      tier,
-      image: {
-        data: processedImage,
-        contentType: "image/png",
-      },
+    tierImages.forEach((tierImage) => {
+      formattedImages[tierImage.tier.toLowerCase()] =
+        tierImage.image.data.toString("base64");
     });
 
-    await tierImage.save();
-    res.status(201).json({ message: "Tier image uploaded successfully" });
+    res.json({ tierImages: formattedImages });
   } catch (error) {
-    res.status(500).json({ message: "Error uploading tier image" });
+    res.status(500).json({ message: "Error fetching tier images" });
   }
 });
 
-// Get tier image by tier level
-router.post("/tierImages", async (req, res) => {
-  try {
-    const { tier } = req.body;
-    const tierImage = await TierImage.findOne({ tier });
+// Upload tier image with authentication
+router.post(
+  "/upload",
+  authenticateToken,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No image provided" });
+      }
 
-    if (!tierImage) {
-      return res.status(404).json({ message: "Tier image not found" });
+      const { tier } = req.body;
+      const imageBuffer = await sharp(req.file.buffer)
+        .resize(55, 47)
+        .png()
+        .toBuffer();
+
+      await TierImage.findOneAndUpdate(
+        { tier: tier.toUpperCase() },
+        {
+          image: {
+            data: imageBuffer,
+            contentType: "image/png",
+          },
+        },
+        { upsert: true }
+      );
+
+      res.json({ message: "Tier image uploaded successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Error uploading tier image" });
     }
-
-    res.json({
-      imageUrl: `data:${
-        tierImage.image.contentType
-      };base64,${tierImage.image.data.toString("base64")}`,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching tier image" });
   }
-});
+);
 
 module.exports = router;

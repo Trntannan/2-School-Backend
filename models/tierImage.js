@@ -5,10 +5,15 @@ const tierImageSchema = new mongoose.Schema({
     type: String,
     required: true,
     enum: ["BRONZE", "SILVER", "GOLD", "DIAMOND"],
+    unique: true,
   },
   image: {
     data: Buffer,
     contentType: String,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 });
 
