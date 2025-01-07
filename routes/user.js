@@ -523,7 +523,6 @@ const getRequests = async (req, res) => {
             userId: request.userId,
             groupId: group._id,
             groupName: group.name,
-            status: request.status,
             user: {
               username: requestingUser.username,
               profile: requestingUser.profile,
@@ -563,7 +562,7 @@ const acceptRequest = async (req, res) => {
     }
 
     const updateOperation = {};
-    if (["DIAMOND", "GOLD"].includes(tier)) {
+    if (["DIAMOND", "GOLD"].includes(request.tier)) {
       updateOperation.$pull = { "groups.$.requests": { username } };
       updateOperation.$push = {
         "groups.$.members": {
