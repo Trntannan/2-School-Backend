@@ -394,6 +394,46 @@ const deleteGroup = async (req, res) => {
 };
 
 // make request, find group in 'users' collection by groupId, add userId to requests array in group
+// const joinRequest = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.userId);
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+//     if (!req.body.groupId || !ObjectId.isValid(req.body.groupId)) {
+//       return res.status(400).json({ message: "Invalid group ID format" });
+//     }
+
+//     const groupId = new ObjectId(req.body.groupId);
+
+//     const groupExists = await User.findOne({ "groups._id": groupId });
+//     if (groupExists) {
+//       const result = await User.updateOne(
+//         { "groups._id": groupId },
+//         {
+//           $push: {
+//             "groups.$.requests": {
+//               username: user.username,
+//               userId: user._id,
+//             },
+//           },
+//         }
+//       );
+//       return res
+//         .status(200)
+//         .json({ message: "Join request sent successfully" });
+//     }
+//     if (!groupExists) {
+//       return res.status(404).json({ message: "Group not found" });
+//     }
+
+//     res.status(200).json({ message: "Join request sent successfully" });
+//   } catch (error) {
+//     console.error("Error processing join request:", error);
+//     res.status(500).json({ message: "Error processing request" });
+//   }
+// };
+
 const joinRequest = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
@@ -406,28 +446,36 @@ const joinRequest = async (req, res) => {
 
     const groupId = new ObjectId(req.body.groupId);
 
-    const groupExists = await User.findOne({ "groups._id": groupId });
-    if (groupExists) {
-      const result = await User.updateOne(
-        { "groups._id": groupId },
-        {
-          $push: {
-            "groups.$.requests": {
-              username: user.username,
-              userId: user._id,
-            },
+    const groupExists = await User.findOne({
+      "groups._id": groupId,
+      "groups.requests": {
+        $not: {
+          $elemMatch: {
+            $or: [{ username: user.username }, { userId: user._id }],
           },
-        }
-      );
-      return res
-        .status(200)
-        .json({ message: "Join request sent successfully" });
-    }
+        },
+      },
+    });
+
     if (!groupExists) {
-      return res.status(404).json({ message: "Group not found" });
+      return res
+        .status(400)
+        .json({ message: "Group not found or request already exists" });
     }
 
-    res.status(200).json({ message: "Join request sent successfully" });
+    const result = await User.updateOne(
+      { "groups._id": groupId },
+      {
+        $push: {
+          "groups.$.requests": {
+            username: user.username,
+            userId: user._id,
+          },
+        },
+      }
+    );
+
+    return res.status(200).json({ message: "Join request sent successfully" });
   } catch (error) {
     console.error("Error processing join request:", error);
     res.status(500).json({ message: "Error processing request" });
@@ -530,38 +578,38 @@ const acceptRequest = async (req, res) => {
   }
 };
 
-// const checkUsername = async (req, res) => {
-//   try {
-//     const username = req.params.username;
-//     const existingUser = await User.findOne({ username });
+const checkUsername = async (req, res) => {
+  try {
+    const username = req.params.username;
+    const existingUser = await User.findOne({ username });
 
-//     if (existingUser) {
-//       let suggestedUsername = username;
-//       let counter = 1;
-//       let isAvailable = false;
+    if (existingUser) {
+      let suggestedUsername = username;
+      let counter = 1;
+      let isAvailable = false;
 
-//       while (!isAvailable) {
-//         const suggestion = `${username}${counter}`;
-//         const exists = await User.findOne({ username: suggestion });
-//         if (!exists) {
-//           suggestedUsername = suggestion;
-//           isAvailable = true;
-//         }
-//         counter++;
-//       }
+      while (!isAvailable) {
+        const suggestion = `${username}${counter}`;
+        const exists = await User.findOne({ username: suggestion });
+        if (!exists) {
+          suggestedUsername = suggestion;
+          isAvailable = true;
+        }
+        counter++;
+      }
 
-//       return res.status(400).json({
-//         field: "username",
-//         message: "Username already exists.",
-//         suggestion: suggestedUsername,
-//       });
-//     }
+      return res.status(400).json({
+        field: "username",
+        message: "Username already exists.",
+        suggestion: suggestedUsername,
+      });
+    }
 
-//     res.status(200).json({ message: "Username is available" });
-//   } catch (error) {
-//     res.status(500).json({ message: "Error checking username" });
-//   }
-// };
+    res.status(200).json({ message: "Username is available" });
+  } catch (error) {
+    res.status(500).json({ message: "Error checking username" });
+  }
+};
 
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
@@ -588,7 +636,7 @@ router.post("/join-request", authenticateToken, joinRequest);
 router.post("/update-qr", authenticateToken, updateQr);
 router.get("/get-requests", authenticateToken, getRequests);
 router.post("/accept-request", authenticateToken, acceptRequest);
-// router.get("/check-username/:username", checkUsername);
+router.get("/check-username/:username", checkUsername);
 // router.post("/refuse-request", authenticateToken, refuseRequest);
 
 module.exports = { router, connectToMongoDB, User };
