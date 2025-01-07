@@ -550,20 +550,24 @@ const acceptRequest = async (req, res) => {
     }
 
     const { groupId, username } = req.body;
-    const requestingUser = await User.findOne({ username });
+    const group = user.groups.find((group) => group._id.toString() === groupId);
 
-    if (!requestingUser) {
-      return res.status(404).json({ message: "Requesting user not found" });
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    const request = group.requests.find((req) => req.username === username);
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
     }
 
     const updateOperation = {};
-
-    if (["Diamond", "Gold"].includes(requestingUser.tier)) {
+    if (["Diamond", "Gold"].includes(request.tier)) {
       updateOperation.$pull = { "groups.$.requests": { username } };
       updateOperation.$push = {
         "groups.$.members": {
           username,
-          userId: requestingUser._id,
+          userId: request.userId,
         },
       };
     } else {
@@ -572,7 +576,7 @@ const acceptRequest = async (req, res) => {
       };
     }
 
-    const group = await User.findOneAndUpdate(
+    const updatedUser = await User.findOneAndUpdate(
       { "groups._id": groupId },
       updateOperation,
       {
@@ -581,13 +585,9 @@ const acceptRequest = async (req, res) => {
       }
     );
 
-    if (!group) {
-      return res.status(404).json({ message: "Group not found" });
-    }
-
     res.status(200).json({
       message: "Request processed successfully",
-      requiresQR: ["Silver", "Bronze"].includes(requestingUser.tier),
+      requiresQR: ["Silver", "Bronze"].includes(request.tier),
     });
   } catch (error) {
     console.error("Error processing request:", error);
@@ -655,6 +655,6 @@ router.post("/update-qr", authenticateToken, updateQr);
 router.get("/get-requests", authenticateToken, getRequests);
 router.post("/accept-request", authenticateToken, acceptRequest);
 router.get("/check-username/:username", checkUsername);
-// router.post("/refuse-request", authenticateToken, refuseRequest);
+// router.post("/deny-request", authenticateToken, refuseRequest);
 
 module.exports = { router, connectToMongoDB, User };
