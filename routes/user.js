@@ -595,6 +595,36 @@ const acceptRequest = async (req, res) => {
   }
 };
 
+// Deny request
+const denyRequest = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const { groupId, username } = req.body;
+
+    const result = await User.updateOne(
+      { "groups._id": groupId },
+      {
+        $pull: {
+          "groups.$.requests": { username },
+        },
+      }
+    );
+
+    if (result.modifiedCount > 0) {
+      res.status(200).json({ message: "Request denied successfully" });
+    } else {
+      res.status(404).json({ message: "Request not found" });
+    }
+  } catch (error) {
+    console.error("Error denying request:", error);
+    res.status(500).json({ message: "Error processing deny request" });
+  }
+};
+
 // check username exists, if it does return error with suggestion
 const checkUsername = async (req, res) => {
   try {
@@ -655,6 +685,6 @@ router.post("/update-qr", authenticateToken, updateQr);
 router.get("/get-requests", authenticateToken, getRequests);
 router.post("/accept-request", authenticateToken, acceptRequest);
 router.get("/check-username/:username", checkUsername);
-// router.post("/deny-request", authenticateToken, refuseRequest);
+router.post("/deny-request", authenticateToken, denyRequest);
 
 module.exports = { router, connectToMongoDB, User };
