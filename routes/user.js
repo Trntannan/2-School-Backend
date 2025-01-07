@@ -523,6 +523,7 @@ const getRequests = async (req, res) => {
             userId: request.userId,
             groupId: group._id,
             groupName: group.name,
+            status: request.status,
             user: {
               username: requestingUser.username,
               profile: requestingUser.profile,
@@ -556,13 +557,9 @@ const acceptRequest = async (req, res) => {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    const request = group.requests.find((req) => req.username === username);
-    if (!request) {
-      return res.status(404).json({ message: "Request not found" });
-    }
-
     const updateOperation = {};
-    if (["DIAMOND", "GOLD"].includes(request.tier)) {
+    // Check tier from the passed parameter instead of request object
+    if (tier === "DIAMOND" || tier === "GOLD") {
       updateOperation.$pull = { "groups.$.requests": { username } };
       updateOperation.$push = {
         "groups.$.members": {
@@ -588,7 +585,7 @@ const acceptRequest = async (req, res) => {
 
     res.status(200).json({
       message: "Request processed successfully",
-      requiresQR: ["Silver", "Bronze"].includes(request.tier),
+      requiresQR: tier === "SILVER" || tier === "BRONZE",
     });
   } catch (error) {
     console.error("Error processing request:", error);
