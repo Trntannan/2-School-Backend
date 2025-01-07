@@ -673,6 +673,44 @@ const getUserTier = async (req, res) => {
   }
 };
 
+// Verify member
+const verifyMember = async (req, res) => {
+  try {
+    const { scannedUsername, groupId } = req.body;
+
+    const user = await User.findOne({
+      "groups._id": groupId,
+      "groups.requests": {
+        $elemMatch: {
+          username: scannedUsername,
+          status: "QR_SCAN_NEEDED",
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Invalid verification" });
+    }
+
+    const result = await User.updateOne(
+      { "groups._id": groupId },
+      {
+        $pull: { "groups.$.requests": { username: scannedUsername } },
+        $push: {
+          "groups.$.members": {
+            username: scannedUsername,
+            joinedAt: new Date(),
+          },
+        },
+      }
+    );
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: "Error verifying member" });
+  }
+};
+
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
 router.post(
@@ -701,5 +739,6 @@ router.post("/accept-request", authenticateToken, acceptRequest);
 router.get("/check-username/:username", checkUsername);
 router.post("/deny-request", authenticateToken, denyRequest);
 router.get("/current-tier", authenticateToken, getUserTier);
+router.post("/verify-member", authenticateToken, verifyMember);
 
 module.exports = { router, connectToMongoDB, User };
