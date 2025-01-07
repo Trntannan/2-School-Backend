@@ -7,7 +7,6 @@ const TierImage = require("../models/tierImage");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Get all tier images
 router.get("/all", async (req, res) => {
   try {
     const tierImages = await TierImage.find({});
@@ -24,7 +23,6 @@ router.get("/all", async (req, res) => {
   }
 });
 
-// Upload tier image with authentication
 router.post("/upload", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {

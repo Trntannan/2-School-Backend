@@ -600,7 +600,7 @@ const checkUsername = async (req, res) => {
 
       return res.status(400).json({
         field: "username",
-        message: "Username already exists.",
+        message: "Username already in use.",
         suggestion: suggestedUsername,
       });
     }
