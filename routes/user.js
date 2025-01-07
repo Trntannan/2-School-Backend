@@ -660,12 +660,9 @@ const checkUsername = async (req, res) => {
 };
 
 // get current tier
-const getCurrentTier = async (req, res) => {
+const getUserTier = async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const user = await User.findById(req.user.id);
     res.status(200).json({ tier: user.tier });
   } catch (error) {
     res.status(500).json({ message: "Error fetching tier" });
@@ -699,6 +696,6 @@ router.get("/get-requests", authenticateToken, getRequests);
 router.post("/accept-request", authenticateToken, acceptRequest);
 router.get("/check-username/:username", checkUsername);
 router.post("/deny-request", authenticateToken, denyRequest);
-router.get("/current-tier", authenticateToken, getCurrentTier);
+router.get("/current-tier", authenticateToken, getUserTier);
 
 module.exports = { router, connectToMongoDB, User };
