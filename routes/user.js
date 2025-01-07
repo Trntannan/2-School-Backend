@@ -523,6 +523,7 @@ const getRequests = async (req, res) => {
             userId: request.userId,
             groupId: group._id,
             groupName: group.name,
+            status: request.status,
             user: {
               username: requestingUser.username,
               profile: requestingUser.profile,
@@ -549,7 +550,7 @@ const acceptRequest = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const { groupId, username } = req.body;
+    const { userId, groupId, username, tier } = req.body;
     const group = user.groups.find((group) => group._id.toString() === groupId);
 
     if (!group) {
@@ -562,12 +563,13 @@ const acceptRequest = async (req, res) => {
     }
 
     const updateOperation = {};
-    if (["Diamond", "Gold"].includes(request.tier)) {
+    if (["DIAMOND", "GOLD"].includes(tier)) {
       updateOperation.$pull = { "groups.$.requests": { username } };
       updateOperation.$push = {
         "groups.$.members": {
           username,
-          userId: request.userId,
+          userId,
+          tier,
         },
       };
     } else {
