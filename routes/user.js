@@ -561,21 +561,36 @@ const acceptRequest = async (req, res) => {
       return res.status(404).json({ message: "Request not found" });
     }
 
-    const status = ["Silver", "Bronze"].includes(request.tier)
-      ? "QR_SCAN_NEEDED"
-      : "ACCEPTED";
+    const updateOperation = {};
+    if (["Diamond", "Gold"].includes(request.tier)) {
+      updateOperation.$pull = { "groups.$.requests": { username } };
+      updateOperation.$push = {
+        "groups.$.members": {
+          username,
+          userId: request.userId,
+        },
+      };
+    } else {
+      updateOperation.$set = {
+        "groups.$.requests.$[request].status": "SCAN",
+      };
+    }
 
     const updatedUser = await User.findOneAndUpdate(
-      { "groups._id": groupId, "groups.requests.username": username },
-      { $set: { "groups.$.requests.$.status": status } },
-      { new: true }
+      { "groups._id": groupId },
+      updateOperation,
+      {
+        new: true,
+        arrayFilters: [{ "request.username": username }],
+      }
     );
 
     res.status(200).json({
       message: "Request processed successfully",
-      status: status,
+      requiresQR: ["Silver", "Bronze"].includes(request.tier),
     });
   } catch (error) {
+    console.error("Error processing request:", error);
     res.status(500).json({ message: "Error processing request" });
   }
 };
