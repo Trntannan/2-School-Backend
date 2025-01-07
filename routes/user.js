@@ -558,7 +558,6 @@ const acceptRequest = async (req, res) => {
     }
 
     const updateOperation = {};
-    // Check tier from the passed parameter instead of request object
     if (tier === "DIAMOND" || tier === "GOLD") {
       updateOperation.$pull = { "groups.$.requests": { username } };
       updateOperation.$push = {
@@ -681,7 +680,7 @@ const verifyMember = async (req, res) => {
       "groups.requests": {
         $elemMatch: {
           username: scannedUsername,
-          status: "QR_SCAN_NEEDED",
+          status: "SCAN",
         },
       },
     });
