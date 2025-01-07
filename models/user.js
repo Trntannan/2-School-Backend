@@ -94,6 +94,10 @@ const userSchema = new mongoose.Schema(
       lastVerified: Date,
       verifiedBy: String,
     },
+    activeToken: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,

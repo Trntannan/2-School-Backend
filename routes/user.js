@@ -76,7 +76,7 @@ const generateToken = (userId, username, tier) => {
 };
 
 // Token Authentication Middleware
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const token = req.header("Authorization")?.split(" ")[1];
 
   if (!token) {
@@ -85,6 +85,14 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, jwtSecret);
+
+    const user = await User.findById(decoded.id);
+    if (!user || user.activeToken !== token) {
+      return res
+        .status(403)
+        .json({ message: "Session expired. Please login again" });
+    }
+
     req.userId = decoded.id;
     req.username = decoded.username;
     req.tier = decoded.tier;
@@ -187,15 +195,15 @@ const loginUser = async (req, res) => {
     }
 
     user.loginAttempts = 0;
-    await user.save();
 
     const token = jwt.sign(
       { id: user._id, username: user.username, tier: user.tier },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "1h",
-      }
+      { expiresIn: "1h" }
     );
+
+    user.activeToken = token;
+    await user.save();
 
     res.status(200).json({ message: "Login successful", token });
   } catch (error) {
@@ -393,6 +401,18 @@ const deleteGroup = async (req, res) => {
   }
 };
 
+// logout user
+const logoutUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    user.activeToken = null;
+    await user.save();
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error during logout" });
+  }
+};
+
 // make request, find group in 'users' collection by groupId, add userId to requests array in group
 const joinRequest = async (req, res) => {
   try {
@@ -433,54 +453,6 @@ const joinRequest = async (req, res) => {
     res.status(500).json({ message: "Error processing request" });
   }
 };
-
-// const joinRequest = async (req, res) => {
-//   try {
-//     const user = await User.findById(req.userId);
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-//     if (!req.body.groupId || !ObjectId.isValid(req.body.groupId)) {
-//       return res.status(400).json({ message: "Invalid group ID format" });
-//     }
-
-//     const groupId = new ObjectId(req.body.groupId);
-
-//     const groupExists = await User.findOne({
-//       "groups._id": groupId,
-//       "groups.requests": {
-//         $not: {
-//           $elemMatch: {
-//             $or: [{ username: user.username }, { userId: user._id }],
-//           },
-//         },
-//       },
-//     });
-
-//     if (!groupExists) {
-//       return res
-//         .status(400)
-//         .json({ message: "Group not found or request already exists" });
-//     }
-
-//     const result = await User.updateOne(
-//       { "groups._id": groupId },
-//       {
-//         $push: {
-//           "groups.$.requests": {
-//             username: user.username,
-//             userId: user._id,
-//           },
-//         },
-//       }
-//     );
-
-//     return res.status(200).json({ message: "Join request sent successfully" });
-//   } catch (error) {
-//     console.error("Error processing join request:", error);
-//     res.status(500).json({ message: "Error processing request" });
-//   }
-// };
 
 // update qrCode with qrData
 const updateQr = async (req, res) => {
@@ -737,5 +709,6 @@ router.get("/check-username/:username", checkUsername);
 router.post("/deny-request", authenticateToken, denyRequest);
 router.get("/current-tier", authenticateToken, getUserTier);
 router.post("/verify-member", authenticateToken, verifyMember);
+router.post("/logout", authenticateToken, logoutUser);
 
 module.exports = { router, connectToMongoDB, User };
