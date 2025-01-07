@@ -44,7 +44,7 @@ const userSchema = new mongoose.Schema(
             },
             status: {
               type: String,
-              enum: ["PENDING", "AWAITING APPROVAL"],
+              enum: ["PENDING", "QR SCAN NEEDED"],
               default: "PENDING",
             },
           },

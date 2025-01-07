@@ -394,46 +394,6 @@ const deleteGroup = async (req, res) => {
 };
 
 // make request, find group in 'users' collection by groupId, add userId to requests array in group
-// const joinRequest = async (req, res) => {
-//   try {
-//     const user = await User.findById(req.userId);
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-//     if (!req.body.groupId || !ObjectId.isValid(req.body.groupId)) {
-//       return res.status(400).json({ message: "Invalid group ID format" });
-//     }
-
-//     const groupId = new ObjectId(req.body.groupId);
-
-//     const groupExists = await User.findOne({ "groups._id": groupId });
-//     if (groupExists) {
-//       const result = await User.updateOne(
-//         { "groups._id": groupId },
-//         {
-//           $push: {
-//             "groups.$.requests": {
-//               username: user.username,
-//               userId: user._id,
-//             },
-//           },
-//         }
-//       );
-//       return res
-//         .status(200)
-//         .json({ message: "Join request sent successfully" });
-//     }
-//     if (!groupExists) {
-//       return res.status(404).json({ message: "Group not found" });
-//     }
-
-//     res.status(200).json({ message: "Join request sent successfully" });
-//   } catch (error) {
-//     console.error("Error processing join request:", error);
-//     res.status(500).json({ message: "Error processing request" });
-//   }
-// };
-
 const joinRequest = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
@@ -446,41 +406,81 @@ const joinRequest = async (req, res) => {
 
     const groupId = new ObjectId(req.body.groupId);
 
-    const groupExists = await User.findOne({
-      "groups._id": groupId,
-      "groups.requests": {
-        $not: {
-          $elemMatch: {
-            $or: [{ username: user.username }, { userId: user._id }],
+    const groupExists = await User.findOne({ "groups._id": groupId });
+    if (groupExists) {
+      const result = await User.updateOne(
+        { "groups._id": groupId },
+        {
+          $push: {
+            "groups.$.requests": {
+              username: user.username,
+              userId: user._id,
+            },
           },
-        },
-      },
-    });
-
-    if (!groupExists) {
+        }
+      );
       return res
-        .status(400)
-        .json({ message: "Group not found or request already exists" });
+        .status(200)
+        .json({ message: "Join request sent successfully" });
+    }
+    if (!groupExists) {
+      return res.status(404).json({ message: "Group not found" });
     }
 
-    const result = await User.updateOne(
-      { "groups._id": groupId },
-      {
-        $push: {
-          "groups.$.requests": {
-            username: user.username,
-            userId: user._id,
-          },
-        },
-      }
-    );
-
-    return res.status(200).json({ message: "Join request sent successfully" });
+    res.status(200).json({ message: "Join request sent successfully" });
   } catch (error) {
     console.error("Error processing join request:", error);
     res.status(500).json({ message: "Error processing request" });
   }
 };
+
+// const joinRequest = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.userId);
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+//     if (!req.body.groupId || !ObjectId.isValid(req.body.groupId)) {
+//       return res.status(400).json({ message: "Invalid group ID format" });
+//     }
+
+//     const groupId = new ObjectId(req.body.groupId);
+
+//     const groupExists = await User.findOne({
+//       "groups._id": groupId,
+//       "groups.requests": {
+//         $not: {
+//           $elemMatch: {
+//             $or: [{ username: user.username }, { userId: user._id }],
+//           },
+//         },
+//       },
+//     });
+
+//     if (!groupExists) {
+//       return res
+//         .status(400)
+//         .json({ message: "Group not found or request already exists" });
+//     }
+
+//     const result = await User.updateOne(
+//       { "groups._id": groupId },
+//       {
+//         $push: {
+//           "groups.$.requests": {
+//             username: user.username,
+//             userId: user._id,
+//           },
+//         },
+//       }
+//     );
+
+//     return res.status(200).json({ message: "Join request sent successfully" });
+//   } catch (error) {
+//     console.error("Error processing join request:", error);
+//     res.status(500).json({ message: "Error processing request" });
+//   }
+// };
 
 // update qrCode with qrData
 const updateQr = async (req, res) => {
@@ -527,6 +527,7 @@ const getRequests = async (req, res) => {
               username: requestingUser.username,
               profile: requestingUser.profile,
               bio: requestingUser.bio,
+              tier: requestingUser.tier,
             },
           };
         })
@@ -547,37 +548,54 @@ const acceptRequest = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    const groupId = req.body;
-    const username = req.body.username;
 
-    if (!groupId || !ObjectId.isValid(groupId)) {
-      return res.status(400).json({ message: "Invalid group ID format" });
+    const { groupId, username } = req.body;
+    const requestingUser = await User.findOne({ username });
+
+    if (!requestingUser) {
+      return res.status(404).json({ message: "Requesting user not found" });
     }
 
-    const groupObjectId = new ObjectId(groupId);
+    const updateOperation = {};
+
+    if (["Diamond", "Gold"].includes(requestingUser.tier)) {
+      updateOperation.$pull = { "groups.$.requests": { username } };
+      updateOperation.$push = {
+        "groups.$.members": {
+          username,
+          userId: requestingUser._id,
+        },
+      };
+    } else {
+      updateOperation.$set = {
+        "groups.$.requests.$[request].status": "QR_SCAN_NEEDED",
+      };
+    }
 
     const group = await User.findOneAndUpdate(
       { "groups._id": groupId },
+      updateOperation,
       {
-        $pull: { "groups.$.requests": { username: username } },
-        $push: {
-          "groups.$.members": { username: username, userId: req.userId },
-        },
-      },
-      { new: true }
+        new: true,
+        arrayFilters: [{ "request.username": username }],
+      }
     );
 
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    res.status(200).json({ message: "Request processed successfully" });
+    res.status(200).json({
+      message: "Request processed successfully",
+      requiresQR: ["Silver", "Bronze"].includes(requestingUser.tier),
+    });
   } catch (error) {
     console.error("Error processing request:", error);
     res.status(500).json({ message: "Error processing request" });
   }
 };
 
+// check username exists, if it does return error with suggestion
 const checkUsername = async (req, res) => {
   try {
     const username = req.params.username;
