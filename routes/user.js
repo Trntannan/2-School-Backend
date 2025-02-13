@@ -529,7 +529,7 @@ const acceptRequest = async (req, res) => {
       return res.status(404).json({ message: "Group not found" });
     }
 
-    const updateOperation = {};
+    updateOperation = {};
     if (tier === "DIAMOND" || tier === "GOLD") {
       updateOperation.$pull = { "groups.$.requests": { username } };
       updateOperation.$push = {
@@ -539,6 +539,8 @@ const acceptRequest = async (req, res) => {
           tier,
         },
       };
+
+      // if tier is DIAMOND or GOLD, add user to members array
     } else {
       updateOperation.$set = {
         "groups.$.requests.$[request].status": "SCAN",
