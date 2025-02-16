@@ -70,7 +70,7 @@ const initializeCollections = async () => {
 
 // Token Generation
 const generateToken = (userId, username, tier) => {
-  return jwt.sign({ id: userId, username, tier }, jwtSecret, {
+  return jwt.sign({ id: userId.toString(), username, tier }, jwtSecret, {
     expiresIn: "1h",
   });
 };
