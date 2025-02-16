@@ -36,6 +36,19 @@ const connectToMongoDB = async () => {
     await mongoose.connect(mongoURI, {
       dbName,
     });
+    const migrateExistingGroups = async () => {
+      const users = await User.find({});
+      for (const user of users) {
+        for (const group of user.groups) {
+          if (!group.owner) {
+            group.owner = user._id;
+          }
+        }
+        await user.save();
+      }
+    };
+
+    await migrateExistingGroups();
     console.log(`Connected to MongoDB database: ${dbName}`);
     await initializeCollections();
   } catch (error) {
@@ -425,6 +438,7 @@ const newGroup = async (req, res) => {
       name,
       startTime,
       routes,
+      owner: user._id,
       createdAt: new Date(),
       members: [
         {
