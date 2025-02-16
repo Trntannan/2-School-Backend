@@ -41,7 +41,7 @@ const connectToMongoDB = async () => {
       for (const user of users) {
         for (const group of user.groups) {
           if (!group.owner) {
-            group.owner = user.username;
+            group.owner = user._id;
           }
         }
         await user.save();
@@ -438,8 +438,15 @@ const newGroup = async (req, res) => {
       name,
       startTime,
       routes,
-      owner: user.username,
+      owner: user._id,
       createdAt: new Date(),
+      members: [
+        {
+          userId: user._id,
+          username: user.username,
+          role: "admin",
+        },
+      ],
     };
 
     user.groups.push(addGroup);
