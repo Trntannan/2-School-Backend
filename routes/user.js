@@ -70,7 +70,7 @@ const initializeCollections = async () => {
 
 // Token Generation
 const generateToken = (userId, username, tier) => {
-  return jwt.sign({ id: userId.toString(), username, tier }, jwtSecret, {
+  return jwt.sign({ id: userId, username, tier }, jwtSecret, {
     expiresIn: "1h",
   });
 };
@@ -177,6 +177,8 @@ const registerUser = async (req, res) => {
     await newUser.save();
 
     const token = generateToken(newUser._id, newUser.username, newUser.tier);
+    newUser.activeToken = token;
+    await newUser.save();
     res.status(201).json({
       message: "User registered successfully",
       userId: newUser._id,
