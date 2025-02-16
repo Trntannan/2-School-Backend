@@ -176,7 +176,7 @@ const registerUser = async (req, res) => {
     });
     await newUser.save();
 
-    const token = generateToken(newUser._id);
+    const token = generateToken(newUser._id, newUser.username, newUser.tier);
     res.status(201).json({
       message: "User registered successfully",
       userId: newUser._id,
