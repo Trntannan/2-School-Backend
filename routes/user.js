@@ -121,8 +121,15 @@ const registerUser = async (req, res) => {
   const { username, email, password: hashedPassword } = req.body;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+  if (!username || !email || !hashedPassword) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
   if (!emailRegex.test(email)) {
-    return res.status(400).json({ message: "Invalid email format" });
+    return res.status(400).json({
+      field: "email",
+      message: "Invalid email format",
+    });
   }
 
   try {
@@ -132,9 +139,9 @@ const registerUser = async (req, res) => {
     ]);
 
     if (existingEmail) {
-      return res.status(400).json({
+      return res.status(409).json({
         field: "email",
-        message: "Email already exists.",
+        message: "Email already exists",
         error: true,
       });
     }
@@ -144,7 +151,7 @@ const registerUser = async (req, res) => {
       let counter = 1;
       let isAvailable = false;
 
-      while (!isAvailable) {
+      while (!isAvailable && counter < 100) {
         const suggestion = `${username}${counter}`;
         const exists = await User.findOne({ username: suggestion });
         if (!exists) {
@@ -154,9 +161,9 @@ const registerUser = async (req, res) => {
         counter++;
       }
 
-      return res.status(400).json({
+      return res.status(409).json({
         field: "username",
-        message: "Username already exists.",
+        message: "Username already exists",
         suggestion: suggestedUsername,
         error: true,
       });
@@ -170,10 +177,23 @@ const registerUser = async (req, res) => {
     await newUser.save();
 
     const token = generateToken(newUser._id);
-    res.status(201).json({ message: "User registered successfully", token });
+    res.status(201).json({
+      message: "User registered successfully",
+      userId: newUser._id,
+      token,
+    });
   } catch (error) {
-    console.error("Error registering user:", error);
-    res.status(500).json({ message: "Error registering user" });
+    console.error("Registration error:", error);
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: "Invalid input data",
+        errors: Object.values(error.errors).map((err) => err.message),
+      });
+    }
+    res.status(500).json({
+      message: "Error registering user",
+      error: error.message,
+    });
   }
 };
 
@@ -181,21 +201,43 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res
+        .status(400)
+        .json({ message: "Username and password are required" });
+    }
+
     const user = await User.findOne({ username });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    if (user.loginAttempts >= 5) {
+      const lastAttempt = user.lastLoginAttempt || new Date(0);
+      const lockoutDuration = 15 * 60 * 1000; // 15 minutes
+      if (Date.now() - lastAttempt < lockoutDuration) {
+        return res.status(429).json({
+          message: "Account temporarily locked. Please try again later",
+          remainingTime: lockoutDuration - (Date.now() - lastAttempt),
+        });
+      }
+      user.loginAttempts = 0;
+    }
+
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       user.loginAttempts += 1;
+      user.lastLoginAttempt = new Date();
       await user.save();
-      return res.status(401).json({ message: "Invalid password" });
+      return res.status(401).json({
+        message: "Invalid password",
+        attemptsRemaining: 5 - user.loginAttempts,
+      });
     }
 
     user.loginAttempts = 0;
-
     const token = jwt.sign(
       { id: user._id, username: user.username, tier: user.tier },
       process.env.JWT_SECRET,
@@ -205,10 +247,19 @@ const loginUser = async (req, res) => {
     user.activeToken = token;
     await user.save();
 
-    res.status(200).json({ message: "Login successful", token });
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      userId: user._id,
+      username: user.username,
+      tier: user.tier,
+    });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ message: "Internal server error during login" });
+    res.status(500).json({
+      message: "Internal server error during login",
+      error: error.message,
+    });
   }
 };
 
@@ -257,6 +308,10 @@ const completeUserProfile = async (req, res) => {
 // Fetch User Profile
 const getUserProfile = async (req, res) => {
   try {
+    if (!ObjectId.isValid(req.userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
     const user = await User.findOne(
       { _id: new ObjectId(req.userId) },
       { username: 1, profile: 1 }
@@ -270,38 +325,64 @@ const getUserProfile = async (req, res) => {
     res.status(200).json({ username, profile });
   } catch (error) {
     console.error("Error fetching profile:", error);
-    res.status(500).json({ message: "Internal server error" });
+    if (error.name === "CastError") {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+    res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 };
 
 const updateUserProfile = async (req, res) => {
-  const { username, bio } = req.body;
-  let profilePic = null;
+  try {
+    const { username, bio } = req.body;
 
-  if (req.file) {
-    const resizedImage = await sharp(req.file.buffer)
-      .resize({ width: 200, height: 200 })
-      .toFormat("jpeg")
-      .toBuffer();
-    profilePic = resizedImage.toString("base64");
-  } else {
-    profilePic = req.body.profilePic;
-  }
+    if (!username || username.trim().length === 0) {
+      return res.status(400).json({ message: "Username is required" });
+    }
 
-  const update = { username, profile: { bio, profilePic } };
-  const user = await User.findOneAndUpdate(
-    { _id: req.userId },
-    { $set: update },
-    { new: true }
-  );
+    let profilePic = null;
 
-  if (user) {
-    res.json({
+    if (req.file) {
+      try {
+        const resizedImage = await sharp(req.file.buffer)
+          .resize({ width: 200, height: 200 })
+          .toFormat("jpeg")
+          .toBuffer();
+        profilePic = resizedImage.toString("base64");
+      } catch (imageError) {
+        return res.status(400).json({ message: "Error processing image" });
+      }
+    } else {
+      profilePic = req.body.profilePic;
+    }
+
+    const update = { username, profile: { bio, profilePic } };
+    const user = await User.findOneAndUpdate(
+      { _id: req.userId },
+      { $set: update },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
       message: "Profile updated successfully",
       profile: user.profile,
     });
-  } else {
-    res.status(404).json({ message: "User not found" });
+  } catch (error) {
+    console.error("Profile update error:", error);
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "Username already exists" });
+    }
+    res.status(500).json({
+      message: "Error updating profile",
+      error: error.message,
+    });
   }
 };
 
@@ -320,20 +401,57 @@ const deleteAccount = async (req, res) => {
 const newGroup = async (req, res) => {
   const { name, startTime, routes } = req.body;
 
+  if (!name || !startTime || !routes) {
+    return res
+      .status(400)
+      .json({ message: "Missing required group information" });
+  }
+
   try {
     const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const addGroup = { name, startTime, routes };
+    if (user.groups.length >= 5 && user.tier !== "DIAMOND") {
+      return res
+        .status(403)
+        .json({ message: "Maximum group limit reached for your tier" });
+    }
+
+    const addGroup = {
+      name,
+      startTime,
+      routes,
+      createdAt: new Date(),
+      members: [
+        {
+          userId: user._id,
+          username: user.username,
+          role: "admin",
+        },
+      ],
+    };
+
     user.groups.push(addGroup);
     await user.save();
 
-    res.status(201).json(addGroup);
+    res.status(201).json({
+      message: "Group created successfully",
+      group: addGroup,
+    });
   } catch (error) {
-    console.error("Error creating group:", error);
-    res.status(500).json({ message: "Failed to create group" });
+    console.error("Group creation error:", error);
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: "Invalid group data",
+        errors: Object.values(error.errors).map((err) => err.message),
+      });
+    }
+    res.status(500).json({
+      message: "Failed to create group",
+      error: error.message,
+    });
   }
 };
 
@@ -477,19 +595,33 @@ const updateQr = async (req, res) => {
 // get all requests
 const getRequests = async (req, res) => {
   try {
+    if (!ObjectId.isValid(req.userId)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
     const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     const groupsWithRequests = user.groups.filter(
-      (group) => group.requests.length > 0
+      (group) => group.requests && group.requests.length > 0
     );
+
+    if (groupsWithRequests.length === 0) {
+      return res.status(200).json({
+        message: "No pending requests found",
+        requests: [],
+      });
+    }
 
     const requestsWithUserDetails = await Promise.all(
       groupsWithRequests.flatMap((group) =>
         group.requests.map(async (request) => {
           const requestingUser = await User.findById(request.userId);
+          if (!requestingUser) {
+            return null;
+          }
           return {
             requestId: request._id,
             userId: request.userId,
@@ -507,10 +639,20 @@ const getRequests = async (req, res) => {
       )
     );
 
-    res.status(200).json(requestsWithUserDetails);
+    const validRequests = requestsWithUserDetails.filter(
+      (request) => request !== null
+    );
+
+    res.status(200).json(validRequests);
   } catch (error) {
     console.error("Error fetching requests:", error);
-    res.status(500).json({ message: "Error fetching requests" });
+    if (error.name === "CastError") {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+    res.status(500).json({
+      message: "Error fetching requests",
+      error: error.message,
+    });
   }
 };
 
