@@ -77,6 +77,8 @@ const generateToken = (userId, username, tier) => {
 
 // Token Authentication Middleware
 const authenticateToken = async (req, res, next) => {
+  const token = req.header("Authorization")?.split(" ")[1];
+
   if (!token) {
     return res.status(401).json({ message: "Authorization token is missing" });
   }
