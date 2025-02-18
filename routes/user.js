@@ -82,8 +82,8 @@ const initializeCollections = async () => {
 };
 
 // Token Generation
-const generateToken = (userId, username, tier) => {
-  return jwt.sign({ id: userId.toString(), username, tier }, jwtSecret, {
+const generateToken = (_id, username, tier) => {
+  return jwt.sign({ id: _id.toString(), username, tier }, jwtSecret, {
     expiresIn: "1h",
   });
 };
@@ -106,7 +106,7 @@ const authenticateToken = async (req, res, next) => {
         .json({ message: "Session expired. Please login again" });
     }
 
-    req.userId = decoded.id;
+    req.id = decoded.id;
     req.username = decoded.username;
     req.tier = decoded.tier;
     next();
@@ -251,6 +251,8 @@ const loginUser = async (req, res) => {
         attemptsRemaining: 5 - user.loginAttempts,
       });
     }
+
+    const userId = user._id;
 
     user.loginAttempts = 0;
     const token = generateToken(user._id, user.username, user.tier);
