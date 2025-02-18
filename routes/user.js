@@ -83,7 +83,7 @@ const initializeCollections = async () => {
 
 // Token Generation
 const generateToken = (userId, username, tier) => {
-  return jwt.sign({ id: userId, username, tier }, jwtSecret, {
+  return jwt.sign({ id: userId.toString(), username, tier }, jwtSecret, {
     expiresIn: "1h",
   });
 };
@@ -253,13 +253,7 @@ const loginUser = async (req, res) => {
     }
 
     user.loginAttempts = 0;
-    const token = jwt.sign(
-      { id: user._id, username: user.username, tier: user.tier },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    user.activeToken = token;
+    const token = generateToken(user._id, user.username, user.tier);
     await user.save();
 
     res.status(200).json({
