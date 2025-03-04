@@ -1,5 +1,4 @@
 const express = require("express");
-const connectToMongoDB = require("./routes/utils/dbConnection");
 const userRouter = require("./routes/user");
 
 const cors = require("cors");
