@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const User = require("../models/user");
 const initializeCollections = require("./initializeCollections");
 
 const connectToMongoDB = async () => {
