@@ -281,7 +281,17 @@ exports.denyRequest = async (req, res) => {
 exports.verifyMember = async (req, res) => {
   try {
     const { scannedUsername, groupId } = req.body;
-    await userService.verifyMember(groupId, scannedUsername);
+
+    if (!scannedUsername || !groupId) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const result = await userService.verifyMember(groupId, scannedUsername);
+
+    if (!result) {
+      return res.status(404).json({ message: "Invalid verification" });
+    }
+
     res.status(200).json({ success: true });
   } catch (error) {
     console.error("Error verifying member:", error);
@@ -305,5 +315,36 @@ exports.deleteAccount = async (req, res) => {
   } catch (error) {
     console.error("Error deleting account:", error);
     res.status(500).json({ message: "Error deleting account" });
+  }
+};
+
+exports.checkUsername = async (req, res) => {
+  try {
+    const username = req.params.username;
+    const suggestion = await userService.checkUsernameAvailability(username);
+
+    if (suggestion) {
+      return res.status(400).json({
+        field: "username",
+        message: "Username already in use.",
+        suggestion,
+      });
+    }
+
+    res.status(200).json({ message: "Username is available" });
+  } catch (error) {
+    res.status(500).json({ message: "Error checking username" });
+  }
+};
+
+exports.getUserTier = async (req, res) => {
+  try {
+    const user = await userService.findUserById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ tier: user.tier });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching tier" });
   }
 };

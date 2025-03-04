@@ -3,7 +3,7 @@ const router = express.Router();
 const userController = require("./controllers/userController");
 const authenticateToken = require("./middlewares/authenticateToken");
 const { upload } = require("./utils/imageUpload");
-const { loginLimiter, apiLimiter } = require("./middlewares/rateLimiter");
+const loginLimiter = require("./middlewares/rateLimiter");
 const cors = require("./middlewares/cors");
 
 // Apply global middleware
@@ -44,5 +44,8 @@ router.post("/deny-request", authenticateToken, userController.denyRequest);
 // QR and verification routes
 router.post("/update-qr", authenticateToken, userController.updateQr);
 router.post("/verify-member", authenticateToken, userController.verifyMember);
+
+router.get("/check-username/:username", userController.checkUsername);
+router.get("/current-tier", authenticateToken, userController.getUserTier);
 
 module.exports = router;
