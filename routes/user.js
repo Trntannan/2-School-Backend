@@ -8,7 +8,6 @@ const cors = require("./middlewares/cors");
 
 // Apply global middleware
 router.use(cors);
-router.use(apiLimiter);
 
 // Auth routes
 router.post("/register", userController.registerUser);
