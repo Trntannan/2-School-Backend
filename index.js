@@ -1,10 +1,12 @@
 const express = require("express");
-const { connectToMongoDB, router: userRouter } = require("./routes/user");
+const connectToMongoDB = require("./routes/utils/dbConnection");
+const userRouter = require("./routes/user");
+
 const cors = require("cors");
 
 require("dotenv").config();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 const app = express();
 app.set("trust proxy", 1);
 app.get("/ip", (request, response) => response.send(request.ip));
