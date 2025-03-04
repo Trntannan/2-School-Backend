@@ -1,8 +1,7 @@
-import multer from "multer";
-import { memoryStorage } from "multer";
-import sharp from "sharp";
+const multer = require("multer");
+const sharp = require("sharp");
 
-const storage = memoryStorage();
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   if (!file.mimetype.startsWith("image/")) {
@@ -11,7 +10,7 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-export const upload = multer({
+exports.upload = multer({
   storage,
   limits: {
     fileSize: 5 * 1024 * 1024,
@@ -20,7 +19,7 @@ export const upload = multer({
   fileFilter,
 });
 
-export async function processImage(buffer, options = {}) {
+exports.processImage = async (buffer, options = {}) => {
   const { width = 200, height = 200, format = "jpeg", quality = 80 } = options;
 
   return sharp(buffer)
@@ -30,5 +29,4 @@ export async function processImage(buffer, options = {}) {
     })
     .toFormat(format, { quality })
     .toBuffer();
-}
-export default upload;
+};
