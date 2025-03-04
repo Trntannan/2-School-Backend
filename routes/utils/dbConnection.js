@@ -1,15 +1,26 @@
 const mongoose = require("mongoose");
-require("dotenv").config();
-
-const mongoURI = process.env.MONGODB_URI;
-const dbName = process.env.DATABASE_NAME;
+const initializeCollections = require("./initializeCollections");
 
 const connectToMongoDB = async () => {
   try {
-    await mongoose.connect(mongoURI, {
-      dbName,
+    await mongoose.connect(process.env.MONGODB_URI, {
+      dbName: process.env.DATABASE_NAME,
     });
-    console.log(`Connected to MongoDB database: ${dbName}`);
+    console.log(`Connected to MongoDB database: ${process.env.DATABASE_NAME}`);
+
+    const migrateExistingGroups = async () => {
+      const users = await User.find({});
+      for (const user of users) {
+        for (const group of user.groups) {
+          if (!group.owner) {
+            group.owner = user._id;
+          }
+        }
+        await user.save();
+      }
+    };
+
+    await migrateExistingGroups();
     await initializeCollections();
   } catch (error) {
     console.error("MongoDB connection error:", error);

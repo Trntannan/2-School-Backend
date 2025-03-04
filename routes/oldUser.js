@@ -1,17 +1,48 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("./controllers/userController");
-const rateLimiter = require("./middlewares/rateLimiter");
+const authenticateToken = require("./middlewares/authenticateToken");
+const { upload } = require("./utils/imageUpload");
+const { loginLimiter, apiLimiter } = require("./middlewares/rateLimiter");
+const cors = require("./middlewares/cors");
 
+// Apply global middleware
+router.use(cors);
+router.use(apiLimiter);
+
+// Auth routes
 router.post("/register", userController.registerUser);
-router.post("/login", rateLimiter, userController.loginUser);
-router.post("/complete-profile", userController.completeUserProfile);
-router.put("/update-profile", userController.updateUserProfile);
-router.get("/get-profile", userController.getUserProfile);
-router.get("/get-group", userController.getGroup);
-router.get("/all-groups", userController.getAllGroups);
-router.post("/new-group", userController.newGroup);
-router.delete("/delete-group", userController.deleteGroup);
-router.delete("/delete-account", userController.deleteAccount);
+router.post("/login", loginLimiter, userController.loginUser);
+router.post("/logout", authenticateToken, userController.logoutUser);
+
+// Profile routes
+router.get("/get-profile", authenticateToken, userController.getUserProfile);
+router.put(
+  "/update-profile",
+  authenticateToken,
+  upload.single("profilePic"),
+  userController.updateUserProfile
+);
+router.delete(
+  "/delete-account",
+  authenticateToken,
+  userController.deleteAccount
+);
+
+// Group routes
+router.get("/get-group", authenticateToken, userController.getGroup);
+router.get("/all-groups", authenticateToken, userController.getAllGroups);
+router.post("/new-group", authenticateToken, userController.newGroup);
+router.delete("/delete-group", authenticateToken, userController.deleteGroup);
+
+// Request routes
+router.post("/join-request", authenticateToken, userController.joinRequest);
+router.get("/get-requests", authenticateToken, userController.getRequests);
+router.post("/accept-request", authenticateToken, userController.acceptRequest);
+router.post("/deny-request", authenticateToken, userController.denyRequest);
+
+// QR and verification routes
+router.post("/update-qr", authenticateToken, userController.updateQr);
+router.post("/verify-member", authenticateToken, userController.verifyMember);
 
 module.exports = router;
