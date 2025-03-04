@@ -1,4 +1,5 @@
-import multer, { memoryStorage } from "multer";
+import multer from "multer";
+import { memoryStorage } from "multer";
 import sharp from "sharp";
 
 const storage = memoryStorage();
