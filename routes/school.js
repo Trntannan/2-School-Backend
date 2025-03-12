@@ -1,39 +1,43 @@
-const express = require("express");
 const router = express.Router();
-const School = require("./models/school");
-const User = require("./models/user");
 
-router.post("/first-login-password-change", async (req, res) => {
-  const { newPassword, schoolId } = req.body;
-  const school = await School.findById(schoolId);
-  school.password = await bcrypt.hash(newPassword, 10);
-  school.isFirstLogin = false;
+const generateSchoolCredentials = async (req, res) => {
+  const schoolId = `SCH-${Math.random()
+    .toString(36)
+    .substring(2, 8)
+    .toUpperCase()}`;
+  const password = Math.random().toString(36).substring(2, 10);
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const school = new School({
+    schoolName: req.body.schoolName,
+    schoolId,
+    password: hashedPassword,
+  });
+
   await school.save();
-  res.status(200).json({ message: "Password updated successfully" });
-});
 
-router.post("/verify-user", async (req, res) => {
-  const { userId } = req.body;
-  const school = await School.findById(req.schoolId);
-  const user = await User.findById(userId);
+  return res.json({
+    schoolName: req.body.schoolName,
+    schoolId,
+    password,
+  });
+};
 
-  user.tier = "GOLD";
-  await user.save();
+router.post("/school/login", async (req, res) => {
+  const { schoolId, password } = req.body;
+  const school = await School.findOne({ schoolId });
 
-  // Update school's verification lists
-  await School.updateOne(
-    { _id: req.schoolId },
-    {
-      $pull: { pendingVerifications: { userId } },
-      $push: {
-        verifiedUsers: {
-          userId,
-          username: user.username,
-          verificationDate: new Date(),
-        },
-      },
-    }
+  if (!school) return res.status(404).json({ message: "School not found" });
+
+  const validPassword = await bcrypt.compare(password, school.password);
+  if (!validPassword)
+    return res.status(401).json({ message: "Invalid password" });
+
+  const token = jwt.sign(
+    { id: school._id, type: "school" },
+    process.env.JWT_SECRET
   );
 
-  res.status(200).json({ message: "User verified successfully" });
+  res.json({ token, schoolName: school.schoolName });
 });
