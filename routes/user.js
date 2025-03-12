@@ -58,28 +58,28 @@ const connectToMongoDB = async () => {
 };
 
 // Initialize User Collection
-// const initializeCollections = async () => {
-//   try {
-//     const userExists = await User.findOne();
-//     if (!userExists) {
-//       await new User({
-//         username: "admin",
-//         email: "admin@example.com",
-//         password:
-//           "$2a$10$ISbs3S7JkHv3IMPhkdaJVuFb515c1Vsn5nvcNVdd74gDvamS/wtuK",
-//         groups: [],
-//         profile: {
-//           bio: "Fricking Admin guy bro....",
-//           profilePic: {},
-//         },
-//       }).save();
-//       console.log("'users' collection initialized with an initial user");
-//     }
-//   } catch (error) {
-//     console.error("Error initializing collections:", error);
-//     process.exit(1);
-//   }
-// };
+const initializeCollections = async () => {
+  try {
+    const userExists = await User.findOne();
+    if (!userExists) {
+      await new User({
+        username: "admin",
+        email: "admin@example.com",
+        password:
+          "$2a$10$ISbs3S7JkHv3IMPhkdaJVuFb515c1Vsn5nvcNVdd74gDvamS/wtuK",
+        groups: [],
+        profile: {
+          bio: "Fricking Admin guy bro....",
+          profilePic: {},
+        },
+      }).save();
+      console.log("'users' collection initialized with an initial user");
+    }
+  } catch (error) {
+    console.error("Error initializing collections:", error);
+    process.exit(1);
+  }
+};
 
 // Token Generation
 const generateToken = (userId, username, tier) => {
