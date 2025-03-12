@@ -463,12 +463,16 @@ const newGroup = async (req, res) => {
 // get user groups
 const getGroup = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).populate("groups");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    const users = await User.find().lean();
+    const allGroups = [];
+
+    for (const user of users) {
+      if (user.groups.length > 0) {
+        allGroups.push(...user.groups);
+      }
     }
 
-    res.status(200).json(user.groups);
+    res.status(200).json(allGroups);
   } catch (error) {
     console.error("Error fetching groups:", error);
     res.status(500).json({ message: "Error fetching groups" });
