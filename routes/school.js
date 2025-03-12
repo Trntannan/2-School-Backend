@@ -1,3 +1,6 @@
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const router = express.Router();
 
 const generateSchoolCredentials = async (req, res) => {
@@ -41,3 +44,7 @@ router.post("/school/login", async (req, res) => {
 
   res.json({ token, schoolName: school.schoolName });
 });
+
+router.post("/school/generate", generateSchoolCredentials);
+
+module.exports = router;
