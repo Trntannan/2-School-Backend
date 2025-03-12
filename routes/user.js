@@ -253,12 +253,7 @@ const loginUser = async (req, res) => {
     }
 
     user.loginAttempts = 0;
-    const token = jwt.sign(
-      { id: user._id.toString(), username: user.username, tier: user.tier },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
+    const token = generateToken(user._id, user.username, user.tier);
     user.activeToken = token;
     await user.save();
 
