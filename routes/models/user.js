@@ -30,8 +30,7 @@ const userSchema = new mongoose.Schema(
           required: true,
         },
         owner: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
+          type: String,
           required: true,
         },
         members: [
@@ -40,10 +39,7 @@ const userSchema = new mongoose.Schema(
               type: String,
               required: true,
             },
-            userId: {
-              type: String,
-              required: true,
-            },
+            userId: String,
           },
         ],
         requests: [
