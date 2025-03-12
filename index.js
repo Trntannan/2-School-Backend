@@ -5,6 +5,9 @@ const cors = require("cors");
 
 require("dotenv").config();
 
+const schoolRouter = require("./routes/school");
+app.use("/", schoolRouter);
+
 const PORT = process.env.PORT || 5000;
 const app = express();
 // app.set("trust proxy", 1);
