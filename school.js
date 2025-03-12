@@ -4,6 +4,8 @@ const jwt = require("jsonwebtoken");
 const router = express.Router();
 
 const generateSchoolCredentials = async (req, res) => {
+  console.log("Generating credentials for:", req.body.schoolName);
+
   const schoolId = `SCH-${Math.random()
     .toString(36)
     .substring(2, 8)
@@ -20,11 +22,14 @@ const generateSchoolCredentials = async (req, res) => {
 
   await school.save();
 
-  return res.json({
+  const response = {
     schoolName: req.body.schoolName,
     schoolId,
     password,
-  });
+  };
+
+  console.log("Generated credentials:", response);
+  return res.json(response);
 };
 
 router.post("/school/login", async (req, res) => {
