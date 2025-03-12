@@ -36,8 +36,6 @@ const connectToMongoDB = async () => {
     await mongoose.connect(mongoURI, {
       dbName,
     });
-
-    // Migrate existing groups
     const migrateExistingGroups = async () => {
       const users = await User.find({});
       for (const user of users) {
@@ -50,24 +48,7 @@ const connectToMongoDB = async () => {
       }
     };
 
-    // Add new profile fields migration
-    const migrateUserProfiles = async () => {
-      const result = await User.updateMany(
-        { "profile.childName": { $exists: false } },
-        {
-          $set: {
-            "profile.childName": "Not Specified",
-            "profile.schoolName": "Not Specified",
-          },
-        }
-      );
-      console.log(
-        `Updated ${result.modifiedCount} user profiles with new fields`
-      );
-    };
-
     await migrateExistingGroups();
-    await migrateUserProfiles();
     console.log(`Connected to MongoDB database: ${dbName}`);
     await initializeCollections();
   } catch (error) {
