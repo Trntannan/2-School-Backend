@@ -6,13 +6,12 @@ const cors = require("cors");
 require("dotenv").config();
 
 const schoolRouter = require("./routes/school");
-app.use("/", schoolRouter);
 
 const PORT = process.env.PORT || 5000;
 const app = express();
 // app.set("trust proxy", 1);
 // app.get("/ip", (request, response) => response.send(request.ip));
-
+app.use("/", schoolRouter);
 app.use(cors());
 app.use(express.json());
 
