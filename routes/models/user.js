@@ -11,8 +11,8 @@ const userSchema = new mongoose.Schema(
       default: "BRONZE",
     },
     profile: {
-      childName: { type: String, required: true },
-      schoolName: { type: String, required: true },
+      childName: { type: String, required: false },
+      schoolName: { type: String, required: false },
       bio: { type: String, required: false },
       profilePic: {
         data: Buffer,
