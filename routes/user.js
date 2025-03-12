@@ -871,4 +871,4 @@ router.get("/current-tier", authenticateToken, getUserTier);
 router.post("/verify-member", authenticateToken, verifyMember);
 router.post("/logout", authenticateToken, logoutUser);
 
-module.exports = { router, connectToMongoDB, User };
+module.exports = router;
