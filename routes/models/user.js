@@ -10,6 +10,15 @@ const userSchema = new mongoose.Schema(
       enum: ["BRONZE", "SILVER", "GOLD", "DIAMOND"],
       default: "BRONZE",
     },
+    profile: {
+      childName: { type: String, required: true },
+      schoolName: { type: String, required: true },
+      bio: { type: String, required: false },
+      profilePic: {
+        data: Buffer,
+        contentType: String,
+      },
+    },
     groups: [
       {
         name: {
@@ -86,13 +95,6 @@ const userSchema = new mongoose.Schema(
         ],
       },
     ],
-    profile: {
-      bio: { type: String, required: false },
-      profilePic: {
-        data: Buffer,
-        contentType: String,
-      },
-    },
     qrCode: {
       data: Buffer,
       contentType: String,
